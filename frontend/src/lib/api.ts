@@ -110,6 +110,14 @@ export async function getMissionRuntimes(projectId: string, missionId: string): 
   }
 }
 
+export async function getTaskBoard(projectId: string, missionId: string): Promise<TaskBoard | null> {
+  try {
+    return await request<TaskBoard>(`/api/projects/${projectId}/missions/${missionId}/task-board`);
+  } catch {
+    return null;
+  }
+}
+
 export async function getRuntimeSession(projectId: string, sessionId: string) {
   try {
     return await request<{ id: string; backend: string; status: string }>(

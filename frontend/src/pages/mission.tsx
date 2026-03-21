@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 
 import { PageShell } from "../components/page-shell";
-import { getDiscussionSessions, getMission, getMissionDocuments, getMissionRuntimes } from "../lib/api";
+import { getDiscussionSessions, getMission, getMissionDocuments, getMissionRuntimes, getTaskBoard } from "../lib/api";
 import { DiscussionSessionPanel } from "../features/discussions/discussion-session-panel";
 import { DocumentList } from "../features/documents/document-list";
 import { MissionOverview } from "../features/missions/mission-overview";
@@ -31,6 +31,10 @@ export function MissionPage() {
     queryKey: ["mission-runtimes", missionId],
     queryFn: () => getMissionRuntimes(projectId, missionId)
   });
+  const taskBoardQuery = useQuery({
+    queryKey: ["mission-task-board", missionId],
+    queryFn: () => getTaskBoard(projectId, missionId)
+  });
 
   return (
     <PageShell
@@ -47,7 +51,7 @@ export function MissionPage() {
       <MissionOverview mission={missionQuery.data ?? null} />
       <DocumentList documents={documentsQuery.data ?? []} />
       <DiscussionSessionPanel sessions={sessionsQuery.data ?? []} />
-      <TaskBoard />
+      <TaskBoard tasks={taskBoardQuery.data?.items} />
       <AgentRuntimeBoard runtimes={runtimeQuery.data ?? []} />
       <RuntimeEventTimeline events={[]} />
     </PageShell>

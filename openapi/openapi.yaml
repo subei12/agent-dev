@@ -96,6 +96,11 @@ paths:
         "201":
           description: Discussion round created
   /api/projects/{projectId}/missions/{missionId}/task-board:
+    get:
+      summary: Get latest task board
+      responses:
+        "200":
+          description: Task board
     post:
       summary: Create task board
       responses:

@@ -8,6 +8,13 @@ insert into task_boards (
 )
 returning id, mission_id, title, created_at, updated_at;
 
+-- name: GetLatestTaskBoardByMission :one
+select id, mission_id, title, created_at, updated_at
+from task_boards
+where mission_id = $1
+order by created_at desc
+limit 1;
+
 -- name: CreateTaskItem :one
 insert into task_items (
   id,
@@ -30,6 +37,12 @@ returning id, board_id, title, type, status, assigned_agent_id, upstream_task_id
 select id, board_id, title, type, status, assigned_agent_id, upstream_task_ids_json, downstream_task_ids_json, input_document_version_ids_json, input_repo_candidate_ids_json, definition_of_done_json, created_at, updated_at
 from task_items
 where id = $1;
+
+-- name: ListTaskItemsByBoard :many
+select id, board_id, title, type, status, assigned_agent_id, upstream_task_ids_json, downstream_task_ids_json, input_document_version_ids_json, input_repo_candidate_ids_json, definition_of_done_json, created_at, updated_at
+from task_items
+where board_id = $1
+order by created_at asc;
 
 -- name: UpdateTaskItemStatus :one
 update task_items

@@ -9,6 +9,8 @@ import (
 type Store interface {
 	CreateBoard(context.Context, string, string) (TaskBoard, error)
 	CreateTaskItem(context.Context, string, CreateTaskItemCmd) (TaskItem, error)
+	GetBoard(context.Context, string) (TaskBoard, error)
+	ListTaskItems(context.Context, string) ([]TaskItem, error)
 	GetTaskItem(context.Context, string) (TaskItem, error)
 	UpdateTaskStatus(context.Context, string, string) (TaskItem, error)
 	CreateClaim(context.Context, ClaimTaskCmd) (TaskClaim, error)
@@ -18,6 +20,7 @@ type Store interface {
 
 type Service interface {
 	CreateBoard(context.Context, CreateBoardCmd) (TaskBoard, error)
+	GetBoard(context.Context, string) (TaskBoard, error)
 	Claim(context.Context, ClaimTaskCmd) (TaskClaim, error)
 	CreateHandoff(context.Context, CreateHandoffCmd) (TaskHandoff, error)
 	RequestCheckpoint(context.Context, RequestCheckpointCmd) (ReviewCheckpoint, error)
@@ -45,6 +48,20 @@ func (s *service) CreateBoard(ctx context.Context, cmd CreateBoardCmd) (TaskBoar
 		board.Items = append(board.Items, created)
 	}
 
+	return board, nil
+}
+
+func (s *service) GetBoard(ctx context.Context, missionID string) (TaskBoard, error) {
+	board, err := s.store.GetBoard(ctx, missionID)
+	if err != nil {
+		return TaskBoard{}, err
+	}
+
+	items, err := s.store.ListTaskItems(ctx, board.ID)
+	if err != nil {
+		return TaskBoard{}, err
+	}
+	board.Items = items
 	return board, nil
 }
 

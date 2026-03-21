@@ -50,6 +50,26 @@ func (r *Repository) CreateTaskItem(ctx context.Context, boardID string, cmd Cre
 	return itemFromRow(row), nil
 }
 
+func (r *Repository) GetBoard(ctx context.Context, missionID string) (TaskBoard, error) {
+	row, err := sqlc.New(r.pool).GetLatestTaskBoardByMission(ctx, missionID)
+	if err != nil {
+		return TaskBoard{}, err
+	}
+	return boardFromRow(row), nil
+}
+
+func (r *Repository) ListTaskItems(ctx context.Context, boardID string) ([]TaskItem, error) {
+	rows, err := sqlc.New(r.pool).ListTaskItemsByBoard(ctx, boardID)
+	if err != nil {
+		return nil, err
+	}
+	items := make([]TaskItem, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, itemFromRow(row))
+	}
+	return items, nil
+}
+
 func (r *Repository) GetTaskItem(ctx context.Context, taskItemID string) (TaskItem, error) {
 	row, err := sqlc.New(r.pool).GetTaskItem(ctx, taskItemID)
 	if err != nil {

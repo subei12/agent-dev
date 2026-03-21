@@ -28,6 +28,18 @@ func (f *fakeStore) CreateTaskItem(_ context.Context, boardID string, cmd Create
 	return item, nil
 }
 
+func (f *fakeStore) GetBoard(_ context.Context, missionID string) (TaskBoard, error) {
+	return TaskBoard{ID: "board_1", MissionID: missionID, Title: "Delivery Board"}, nil
+}
+
+func (f *fakeStore) ListTaskItems(_ context.Context, _ string) ([]TaskItem, error) {
+	items := make([]TaskItem, 0, len(f.taskItems))
+	for _, item := range f.taskItems {
+		items = append(items, item)
+	}
+	return items, nil
+}
+
 func (f *fakeStore) GetTaskItem(_ context.Context, taskItemID string) (TaskItem, error) {
 	return f.taskItems[taskItemID], nil
 }

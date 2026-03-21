@@ -51,6 +51,24 @@ test("mission workspace renders seeded api data and runtime transcript", async (
     });
   });
 
+  await page.route("http://127.0.0.1:8080/api/projects/proj_1/missions/mission_1/task-board", async (route) => {
+    await route.fulfill({
+      json: {
+        id: "board_1",
+        title: "Delivery Board",
+        items: [
+          {
+            id: "task_runtime",
+            title: "Implement runtime observability",
+            type: "code",
+            status: "handoff_pending",
+            assignedAgentId: "agent_backend"
+          }
+        ]
+      }
+    });
+  });
+
   await page.route("http://127.0.0.1:8080/api/projects/proj_1/executor-sessions/session_1", async (route) => {
     await route.fulfill({
       json: {
@@ -114,6 +132,7 @@ test("mission workspace renders seeded api data and runtime transcript", async (
   await expect(page.getByText("Architecture Snapshot")).toBeVisible();
   await expect(page.getByText("Runtime observability scope")).toBeVisible();
   await expect(page.getByText("streaming codex session")).toBeVisible();
+  await expect(page.getByText("Implement runtime observability")).toBeVisible();
 
   await page.goto("/runtime/sessions/session_1");
 

@@ -12,15 +12,17 @@ const fallbackTasks: TaskCard[] = [
   { id: "task-review", title: "Review transcript access policy", type: "review", status: "todo", assignedAgentId: "agent_reviewer" }
 ];
 
-export function TaskBoard({ tasks = fallbackTasks }: { tasks?: TaskCard[] }) {
+export function TaskBoard({ tasks }: { tasks?: TaskCard[] }) {
+  const items = tasks && tasks.length > 0 ? tasks : fallbackTasks;
+
   return (
     <section className="panel">
       <div className="panel-header">
         <p className="panel-kicker">Task Board</p>
-        <span className="badge">{tasks.length} active lanes</span>
+        <span className="badge">{items.length} active lanes</span>
       </div>
       <div className="task-grid">
-        {tasks.map((task) => (
+        {items.map((task) => (
           <article key={task.id} className="task-card">
             <div className="task-card__meta">
               <span>{task.type}</span>

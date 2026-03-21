@@ -16,6 +16,7 @@ func NewHandler(service Service) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(r chi.Router) {
+	r.Get("/api/projects/{projectId}/missions/{missionId}/task-board", h.getBoard)
 	r.Post("/api/projects/{projectId}/missions/{missionId}/task-board", h.createBoard)
 	r.Post("/api/projects/{projectId}/missions/{missionId}/tasks/{taskId}/claim", h.claimTask)
 	r.Post("/api/projects/{projectId}/missions/{missionId}/tasks/{taskId}/handoffs", h.createHandoff)
@@ -52,6 +53,15 @@ type createCheckpointRequest struct {
 	Summary                  string          `json:"summary"`
 	LinkedDocumentVersionIDs json.RawMessage `json:"linkedDocumentVersionIds"`
 	LinkedRepoCandidateIDs   json.RawMessage `json:"linkedRepoCandidateIds"`
+}
+
+func (h *Handler) getBoard(w http.ResponseWriter, r *http.Request) {
+	board, err := h.service.GetBoard(r.Context(), chi.URLParam(r, "missionId"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, board)
 }
 
 func (h *Handler) createBoard(w http.ResponseWriter, r *http.Request) {
