@@ -27,6 +27,7 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 	r.Get("/api/projects/{projectId}/executor-sessions/{sessionId}", h.getSession)
 	r.Get("/api/projects/{projectId}/executor-sessions/{sessionId}/events", h.listEvents)
 	r.Get("/api/projects/{projectId}/executor-sessions/{sessionId}/transcript", h.getTranscript)
+	r.Get("/api/projects/{projectId}/executor-sessions/{sessionId}/transcript/export", h.exportTranscript)
 	r.Get("/api/projects/{projectId}/executor-sessions/{sessionId}/access-audits", h.listAccessAudits)
 }
 
@@ -87,6 +88,29 @@ func (h *Handler) listAccessAudits(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, items)
+}
+
+func (h *Handler) exportTranscript(w http.ResponseWriter, r *http.Request) {
+	actorUserID := r.Header.Get("X-Actor-Id")
+	if actorUserID == "" {
+		actorUserID = "anonymous"
+	}
+	if h.authorizer != nil {
+		if err := h.authorizer.Require(r.Context(), chi.URLParam(r, "projectId"), actorUserID, authz.CapabilityExportTranscript); err != nil {
+			http.Error(w, "transcript export denied", http.StatusForbidden)
+			return
+		}
+	}
+
+	view, err := h.service.GetTranscriptView(r.Context(), chi.URLParam(r, "sessionId"), actorUserID, "redacted")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Disposition", `attachment; filename="transcript-export.json"`)
+	_ = json.NewEncoder(w).Encode(view)
 }
 
 func writeJSON(w http.ResponseWriter, status int, value any) {

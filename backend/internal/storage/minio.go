@@ -56,6 +56,17 @@ func (s *ObjectStore) PutJSON(ctx context.Context, objectKey string, value any) 
 	return err
 }
 
+func (s *ObjectStore) PutBytes(ctx context.Context, objectKey string, data []byte, contentType string) error {
+	if err := s.ensureBucket(ctx); err != nil {
+		return err
+	}
+
+	_, err := s.client.PutObject(ctx, s.bucket, objectKey, bytes.NewReader(data), int64(len(data)), minio.PutObjectOptions{
+		ContentType: contentType,
+	})
+	return err
+}
+
 func (s *ObjectStore) ensureBucket(ctx context.Context) error {
 	exists, err := s.client.BucketExists(ctx, s.bucket)
 	if err != nil {

@@ -1,6 +1,8 @@
 package archive
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -40,6 +42,7 @@ type service struct {
 
 type ObjectWriter interface {
 	PutJSON(context.Context, string, any) error
+	PutBytes(context.Context, string, []byte, string) error
 }
 
 func NewService(store Store, writer ...ObjectWriter) Service {
@@ -71,7 +74,11 @@ func (s *service) CreateArchive(ctx context.Context, missionID string) (MissionA
 		if err := s.writer.PutJSON(ctx, archiveManifestObjectKey(missionID), manifest); err != nil {
 			return MissionArchive{}, ArchiveManifest{}, err
 		}
-		if err := s.writer.PutJSON(ctx, archiveBundleObjectKey(missionID), BuildBundle(missionID, data)); err != nil {
+		bundleBytes, err := buildBundleZip(manifest, BuildBundle(missionID, data))
+		if err != nil {
+			return MissionArchive{}, ArchiveManifest{}, err
+		}
+		if err := s.writer.PutBytes(ctx, archiveBundleObjectKey(missionID), bundleBytes, "application/zip"); err != nil {
 			return MissionArchive{}, ArchiveManifest{}, err
 		}
 	}
@@ -168,7 +175,37 @@ func archiveManifestObjectKey(missionID string) string {
 }
 
 func archiveBundleObjectKey(missionID string) string {
-	return "archives/" + missionID + "/bundle.json"
+	return "archives/" + missionID + "/bundle.zip"
+}
+
+func buildBundleZip(manifest ArchiveManifest, bundle ArchiveBundle) ([]byte, error) {
+	buffer := &bytes.Buffer{}
+	writer := zip.NewWriter(buffer)
+
+	if err := writeZipJSON(writer, "manifest.json", manifest); err != nil {
+		return nil, err
+	}
+	if err := writeZipJSON(writer, "bundle.json", bundle); err != nil {
+		return nil, err
+	}
+
+	if err := writer.Close(); err != nil {
+		return nil, err
+	}
+	return buffer.Bytes(), nil
+}
+
+func writeZipJSON(writer *zip.Writer, name string, value any) error {
+	entry, err := writer.Create(name)
+	if err != nil {
+		return err
+	}
+	payload, err := json.MarshalIndent(value, "", "  ")
+	if err != nil {
+		return err
+	}
+	_, err = entry.Write(payload)
+	return err
 }
 
 func textValue(value string) pgtype.Text {

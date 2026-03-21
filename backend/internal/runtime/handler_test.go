@@ -72,3 +72,19 @@ func TestGetTranscriptAllowsRedactedViewWhenAuthorized(t *testing.T) {
 		t.Fatalf("expected status %d, got %d", http.StatusOK, rec.Code)
 	}
 }
+
+func TestExportTranscriptRequiresExportPermission(t *testing.T) {
+	handler := NewHandler(fakeRuntimeService{}, fakeAuthorizer{err: authz.ErrForbidden})
+	router := chi.NewRouter()
+	handler.RegisterRoutes(router)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/projects/proj_1/executor-sessions/session_1/transcript/export", nil)
+	req.Header.Set("X-Actor-Id", "demo-user")
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("expected status %d, got %d", http.StatusForbidden, rec.Code)
+	}
+}
