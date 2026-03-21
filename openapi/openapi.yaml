@@ -55,3 +55,43 @@ paths:
       responses:
         "201":
           description: Decision created
+  /api/projects/{projectId}/missions/{missionId}/documents:
+    get:
+      summary: List mission documents
+      responses:
+        "200":
+          description: Document list
+    post:
+      summary: Create mission document
+      responses:
+        "201":
+          description: Document created
+  /api/projects/{projectId}/missions/{missionId}/documents/{documentId}/versions:
+    post:
+      summary: Create document version
+      responses:
+        "201":
+          description: Version created
+  /api/projects/{projectId}/missions/{missionId}/documents/{documentId}/adopt:
+    post:
+      summary: Adopt document version
+      responses:
+        "201":
+          description: Version adopted
+  /api/projects/{projectId}/missions/{missionId}/discussions:
+    get:
+      summary: List discussion sessions
+      responses:
+        "200":
+          description: Discussion sessions
+    post:
+      summary: Create discussion session
+      responses:
+        "201":
+          description: Discussion session created
+  /api/projects/{projectId}/missions/{missionId}/discussions/{sessionId}/rounds:
+    post:
+      summary: Create discussion round
+      responses:
+        "201":
+          description: Discussion round created

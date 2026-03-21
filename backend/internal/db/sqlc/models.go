@@ -51,6 +51,30 @@ type AgentTeamMember struct {
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 }
 
+type DiscussionRound struct {
+	ID                            string             `json:"id"`
+	SessionID                     string             `json:"session_id"`
+	RoundNo                       int32              `json:"round_no"`
+	PromptSummary                 string             `json:"prompt_summary"`
+	ParticipantAgentIdsJson       []byte             `json:"participant_agent_ids_json"`
+	Summary                       string             `json:"summary"`
+	OpenQuestionsJson             []byte             `json:"open_questions_json"`
+	ConflictsJson                 []byte             `json:"conflicts_json"`
+	ConclusionJson                []byte             `json:"conclusion_json"`
+	AdoptedDocumentVersionIdsJson []byte             `json:"adopted_document_version_ids_json"`
+	CreatedAt                     pgtype.Timestamptz `json:"created_at"`
+}
+
+type DiscussionSession struct {
+	ID                 string             `json:"id"`
+	MissionID          string             `json:"mission_id"`
+	Topic              string             `json:"topic"`
+	Status             string             `json:"status"`
+	InitiatedByAgentID string             `json:"initiated_by_agent_id"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
+	ClosedAt           pgtype.Timestamptz `json:"closed_at"`
+}
+
 type ExecutorProfile struct {
 	ID                string             `json:"id"`
 	ProjectID         string             `json:"project_id"`
@@ -135,4 +159,31 @@ type Role struct {
 	PermissionsJson []byte             `json:"permissions_json"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
+type SharedDocument struct {
+	ID                      string             `json:"id"`
+	MissionID               string             `json:"mission_id"`
+	Kind                    string             `json:"kind"`
+	Title                   string             `json:"title"`
+	CurrentAdoptedVersionID pgtype.Text        `json:"current_adopted_version_id"`
+	CreatedAt               pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
+}
+
+type SharedDocumentVersion struct {
+	ID                string             `json:"id"`
+	DocumentID        string             `json:"document_id"`
+	Version           int32              `json:"version"`
+	ParentVersionID   pgtype.Text        `json:"parent_version_id"`
+	Status            string             `json:"status"`
+	ContentFormat     string             `json:"content_format"`
+	StorageKind       string             `json:"storage_kind"`
+	ObjectKey         pgtype.Text        `json:"object_key"`
+	ContentHash       string             `json:"content_hash"`
+	ContentText       string             `json:"content_text"`
+	ProducedByAgentID pgtype.Text        `json:"produced_by_agent_id"`
+	ProducedByRunID   pgtype.Text        `json:"produced_by_run_id"`
+	SourceRoundID     pgtype.Text        `json:"source_round_id"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 }
