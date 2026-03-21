@@ -5,14 +5,21 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+
+	"github.com/your-org/agent-platform/internal/authz"
 )
 
 type Handler struct {
-	service Service
+	service    Service
+	authorizer authz.Authorizer
 }
 
-func NewHandler(service Service) *Handler {
-	return &Handler{service: service}
+func NewHandler(service Service, authorizer ...authz.Authorizer) *Handler {
+	var selected authz.Authorizer
+	if len(authorizer) > 0 {
+		selected = authorizer[0]
+	}
+	return &Handler{service: service, authorizer: selected}
 }
 
 func (h *Handler) RegisterRoutes(r chi.Router) {
@@ -21,6 +28,12 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 }
 
 func (h *Handler) createArchive(w http.ResponseWriter, r *http.Request) {
+	if h.authorizer != nil {
+		if err := h.authorizer.Require(r.Context(), chi.URLParam(r, "projectId"), r.Header.Get("X-Actor-Id"), authz.CapabilityManageArchive); err != nil {
+			http.Error(w, err.Error(), http.StatusForbidden)
+			return
+		}
+	}
 	archive, manifest, err := h.service.CreateArchive(r.Context(), chi.URLParam(r, "missionId"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

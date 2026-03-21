@@ -268,6 +268,18 @@ type Project struct {
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
+type ProjectAccessGrant struct {
+	ID                   string             `json:"id"`
+	ProjectID            string             `json:"project_id"`
+	ActorUserID          string             `json:"actor_user_id"`
+	CanManageMission     bool               `json:"can_manage_mission"`
+	CanViewTranscripts   bool               `json:"can_view_transcripts"`
+	CanExportTranscripts bool               `json:"can_export_transcripts"`
+	CanManageArchive     bool               `json:"can_manage_archive"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+}
+
 type RepoBinding struct {
 	ID            string             `json:"id"`
 	ProjectID     string             `json:"project_id"`
