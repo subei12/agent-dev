@@ -1,5 +1,8 @@
 import { Mission } from "../../lib/api";
 
+/**
+ * MissionOverview 渲染或处理当前前端行为。
+ */
 export function MissionOverview({ mission }: { mission: Mission | null }) {
   return (
     <article className="panel panel--feature">

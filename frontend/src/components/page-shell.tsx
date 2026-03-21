@@ -7,6 +7,9 @@ type PageShellProps = PropsWithChildren<{
   aside?: ReactNode;
 }>;
 
+/**
+ * PageShell 渲染或处理当前前端行为。
+ */
 export function PageShell({ eyebrow, title, description, aside, children }: PageShellProps) {
   return (
     <section className="page-shell">

@@ -10,10 +10,12 @@ import (
 
 type PtyRunner struct{}
 
+// NewPtyRunner 创建并返回对应的组件。
 func NewPtyRunner() *PtyRunner {
 	return &PtyRunner{}
 }
 
+// Run 执行当前组件的主循环或工作流。
 func (r *PtyRunner) Run(ctx context.Context, cmd *exec.Cmd, onOutput func([]byte)) error {
 	ptmx, err := pty.Start(cmd)
 	if err != nil {

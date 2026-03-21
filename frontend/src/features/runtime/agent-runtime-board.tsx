@@ -5,6 +5,9 @@ const fallbackRuntimes: MissionRuntime[] = [
   { id: "runtime_2", agentId: "agent_reviewer", status: "waiting_admin", statusSummary: "awaiting handoff decision", currentExecutorSessionId: "session_2" }
 ];
 
+/**
+ * AgentRuntimeBoard 渲染或处理当前前端行为。
+ */
 export function AgentRuntimeBoard({ runtimes }: { runtimes: MissionRuntime[] }) {
   const items = runtimes.length > 0 ? runtimes : fallbackRuntimes;
 

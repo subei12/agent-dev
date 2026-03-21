@@ -8,6 +8,7 @@ var redactionPatterns = []*regexp.Regexp{
 	regexp.MustCompile(`sk-[A-Za-z0-9_-]+`),
 }
 
+// Redact 移除给定内容中的敏感值。
 func Redact(input string) string {
 	output := input
 	for _, pattern := range redactionPatterns {

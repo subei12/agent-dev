@@ -28,10 +28,12 @@ type Repository struct {
 	pool *pgxpool.Pool
 }
 
+// NewRepository 创建并返回对应的组件。
 func NewRepository(pool *pgxpool.Pool) *Repository {
 	return &Repository{pool: pool}
 }
 
+// CreateDocument 创建请求的资源或记录。
 func (r *Repository) CreateDocument(ctx context.Context, cmd CreateDocumentCmd) (Document, error) {
 	row, err := sqlc.New(r.pool).CreateSharedDocument(ctx, sqlc.CreateSharedDocumentParams{
 		ID:                      uuid.NewString(),
@@ -46,6 +48,7 @@ func (r *Repository) CreateDocument(ctx context.Context, cmd CreateDocumentCmd) 
 	return documentFromRow(row), nil
 }
 
+// GetDocument 返回请求的资源或值。
 func (r *Repository) GetDocument(ctx context.Context, missionID, documentID string) (Document, error) {
 	row, err := sqlc.New(r.pool).GetSharedDocument(ctx, sqlc.GetSharedDocumentParams{
 		ID:        documentID,
@@ -57,6 +60,7 @@ func (r *Repository) GetDocument(ctx context.Context, missionID, documentID stri
 	return documentFromRow(row), nil
 }
 
+// ListDocuments 返回当前查询对应的集合结果。
 func (r *Repository) ListDocuments(ctx context.Context, missionID string) ([]Document, error) {
 	rows, err := sqlc.New(r.pool).ListSharedDocumentsByMission(ctx, missionID)
 	if err != nil {
@@ -69,10 +73,12 @@ func (r *Repository) ListDocuments(ctx context.Context, missionID string) ([]Doc
 	return documents, nil
 }
 
+// NextVersionNumber 实现当前函数行为。
 func (r *Repository) NextVersionNumber(ctx context.Context, documentID string) (int32, error) {
 	return sqlc.New(r.pool).GetNextSharedDocumentVersionNumber(ctx, documentID)
 }
 
+// CreateVersion 创建请求的资源或记录。
 func (r *Repository) CreateVersion(ctx context.Context, cmd CreateVersionCmd, version int32) (DocumentVersion, error) {
 	row, err := sqlc.New(r.pool).CreateSharedDocumentVersion(ctx, sqlc.CreateSharedDocumentVersionParams{
 		ID:                uuid.NewString(),
@@ -95,6 +101,7 @@ func (r *Repository) CreateVersion(ctx context.Context, cmd CreateVersionCmd, ve
 	return documentVersionFromRow(row), nil
 }
 
+// GetVersion 返回请求的资源或值。
 func (r *Repository) GetVersion(ctx context.Context, versionID string) (DocumentVersion, error) {
 	row, err := sqlc.New(r.pool).GetSharedDocumentVersion(ctx, versionID)
 	if err != nil {
@@ -103,6 +110,7 @@ func (r *Repository) GetVersion(ctx context.Context, versionID string) (Document
 	return documentVersionFromRow(row), nil
 }
 
+// ListVersions 返回当前查询对应的集合结果。
 func (r *Repository) ListVersions(ctx context.Context, documentID string) ([]DocumentVersion, error) {
 	rows, err := sqlc.New(r.pool).ListSharedDocumentVersions(ctx, documentID)
 	if err != nil {
@@ -115,6 +123,7 @@ func (r *Repository) ListVersions(ctx context.Context, documentID string) ([]Doc
 	return versions, nil
 }
 
+// UpdateVersionStatus 更新请求的资源状态。
 func (r *Repository) UpdateVersionStatus(ctx context.Context, versionID, status string) (DocumentVersion, error) {
 	row, err := sqlc.New(r.pool).UpdateSharedDocumentVersionStatus(ctx, sqlc.UpdateSharedDocumentVersionStatusParams{
 		ID:     versionID,
@@ -126,10 +135,12 @@ func (r *Repository) UpdateVersionStatus(ctx context.Context, versionID, status 
 	return documentVersionFromRow(row), nil
 }
 
+// ClearAdoptedVersions 实现当前函数行为。
 func (r *Repository) ClearAdoptedVersions(ctx context.Context, documentID string) error {
 	return sqlc.New(r.pool).ClearAdoptedSharedDocumentVersions(ctx, documentID)
 }
 
+// SetCurrentAdoptedVersion 实现当前函数行为。
 func (r *Repository) SetCurrentAdoptedVersion(ctx context.Context, documentID, versionID string) (Document, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -161,6 +172,7 @@ func (r *Repository) SetCurrentAdoptedVersion(ctx context.Context, documentID, v
 	return documentFromRow(row), nil
 }
 
+// documentFromRow 实现当前函数行为。
 func documentFromRow(row sqlc.SharedDocument) Document {
 	return Document{
 		ID:                      row.ID,
@@ -173,6 +185,7 @@ func documentFromRow(row sqlc.SharedDocument) Document {
 	}
 }
 
+// documentVersionFromRow 实现当前函数行为。
 func documentVersionFromRow(row sqlc.SharedDocumentVersion) DocumentVersion {
 	return DocumentVersion{
 		ID:                row.ID,
@@ -192,6 +205,7 @@ func documentVersionFromRow(row sqlc.SharedDocumentVersion) DocumentVersion {
 	}
 }
 
+// textValue 实现当前函数行为。
 func textValue(value string) pgtype.Text {
 	if value == "" {
 		return pgtype.Text{}
@@ -199,6 +213,7 @@ func textValue(value string) pgtype.Text {
 	return pgtype.Text{String: value, Valid: true}
 }
 
+// stringValue 实现当前函数行为。
 func stringValue(value pgtype.Text) string {
 	if !value.Valid {
 		return ""

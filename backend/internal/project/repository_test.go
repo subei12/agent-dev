@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// TestCreateProject 验证该路径的预期行为。
 func TestCreateProject(t *testing.T) {
 	ctx := context.Background()
 

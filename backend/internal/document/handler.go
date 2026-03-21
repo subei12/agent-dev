@@ -14,6 +14,7 @@ type Handler struct {
 	authorizer authz.Authorizer
 }
 
+// NewHandler 创建并返回对应的组件。
 func NewHandler(service Service, authorizer ...authz.Authorizer) *Handler {
 	var selected authz.Authorizer
 	if len(authorizer) > 0 {
@@ -22,6 +23,7 @@ func NewHandler(service Service, authorizer ...authz.Authorizer) *Handler {
 	return &Handler{service: service, authorizer: selected}
 }
 
+// RegisterRoutes 实现当前函数行为。
 func (h *Handler) RegisterRoutes(r chi.Router) {
 	r.Route("/api/projects/{projectId}/missions/{missionId}/documents", func(r chi.Router) {
 		r.Get("/", h.listDocuments)
@@ -53,6 +55,7 @@ type adoptVersionRequest struct {
 	VersionID string `json:"versionId"`
 }
 
+// listDocuments 实现当前函数行为。
 func (h *Handler) listDocuments(w http.ResponseWriter, r *http.Request) {
 	documents, err := h.service.ListDocuments(r.Context(), chi.URLParam(r, "missionId"))
 	if err != nil {
@@ -62,6 +65,7 @@ func (h *Handler) listDocuments(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, documents)
 }
 
+// createDocument 实现当前函数行为。
 func (h *Handler) createDocument(w http.ResponseWriter, r *http.Request) {
 	if err := h.require(r); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
@@ -85,6 +89,7 @@ func (h *Handler) createDocument(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, document)
 }
 
+// listVersions 实现当前函数行为。
 func (h *Handler) listVersions(w http.ResponseWriter, r *http.Request) {
 	versions, err := h.service.ListVersions(r.Context(), chi.URLParam(r, "documentId"))
 	if err != nil {
@@ -94,6 +99,7 @@ func (h *Handler) listVersions(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, versions)
 }
 
+// createVersion 实现当前函数行为。
 func (h *Handler) createVersion(w http.ResponseWriter, r *http.Request) {
 	if err := h.require(r); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
@@ -124,6 +130,7 @@ func (h *Handler) createVersion(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, version)
 }
 
+// adoptVersion 实现当前函数行为。
 func (h *Handler) adoptVersion(w http.ResponseWriter, r *http.Request) {
 	if err := h.require(r); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
@@ -143,12 +150,14 @@ func (h *Handler) adoptVersion(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, version)
 }
 
+// writeJSON 实现当前函数行为。
 func writeJSON(w http.ResponseWriter, status int, value any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(value)
 }
 
+// require 实现当前函数行为。
 func (h *Handler) require(r *http.Request) error {
 	if h.authorizer == nil {
 		return nil

@@ -14,12 +14,14 @@ type Repository struct {
 	queries *sqlc.Queries
 }
 
+// NewRepository 创建并返回对应的组件。
 func NewRepository(pool *pgxpool.Pool) *Repository {
 	return &Repository{
 		queries: sqlc.New(pool),
 	}
 }
 
+// CreateMission 创建请求的资源或记录。
 func (r *Repository) CreateMission(ctx context.Context, cmd CreateMissionCmd) (Mission, error) {
 	row, err := r.queries.CreateMission(ctx, sqlc.CreateMissionParams{
 		ID:            uuid.NewString(),
@@ -39,6 +41,7 @@ func (r *Repository) CreateMission(ctx context.Context, cmd CreateMissionCmd) (M
 	return missionFromRow(row), nil
 }
 
+// GetMission 返回请求的资源或值。
 func (r *Repository) GetMission(ctx context.Context, projectID, missionID string) (Mission, error) {
 	row, err := r.queries.GetMission(ctx, sqlc.GetMissionParams{
 		ID:        missionID,
@@ -50,6 +53,7 @@ func (r *Repository) GetMission(ctx context.Context, projectID, missionID string
 	return missionFromRow(row), nil
 }
 
+// CreateDecision 创建请求的资源或记录。
 func (r *Repository) CreateDecision(ctx context.Context, cmd DecideMissionCmd) (MissionDecision, error) {
 	row, err := r.queries.CreateMissionDecision(ctx, sqlc.CreateMissionDecisionParams{
 		ID:                          uuid.NewString(),
@@ -67,6 +71,7 @@ func (r *Repository) CreateDecision(ctx context.Context, cmd DecideMissionCmd) (
 	return decisionFromRow(row), nil
 }
 
+// UpdateMissionStatus 更新请求的资源状态。
 func (r *Repository) UpdateMissionStatus(ctx context.Context, missionID, status string) (Mission, error) {
 	row, err := r.queries.UpdateMissionStatus(ctx, sqlc.UpdateMissionStatusParams{
 		ID:     missionID,
@@ -78,6 +83,7 @@ func (r *Repository) UpdateMissionStatus(ctx context.Context, missionID, status 
 	return missionFromRow(row), nil
 }
 
+// missionFromRow 实现当前函数行为。
 func missionFromRow(row sqlc.Mission) Mission {
 	return Mission{
 		ID:            row.ID,
@@ -95,6 +101,7 @@ func missionFromRow(row sqlc.Mission) Mission {
 	}
 }
 
+// decisionFromRow 实现当前函数行为。
 func decisionFromRow(row sqlc.MissionDecision) MissionDecision {
 	return MissionDecision{
 		ID:               row.ID,
@@ -106,6 +113,7 @@ func decisionFromRow(row sqlc.MissionDecision) MissionDecision {
 	}
 }
 
+// textValue 实现当前函数行为。
 func textValue(value string) pgtype.Text {
 	if value == "" {
 		return pgtype.Text{}
@@ -113,6 +121,7 @@ func textValue(value string) pgtype.Text {
 	return pgtype.Text{String: value, Valid: true}
 }
 
+// stringValue 实现当前函数行为。
 func stringValue(value pgtype.Text) string {
 	if !value.Valid {
 		return ""

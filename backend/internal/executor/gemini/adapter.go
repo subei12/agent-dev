@@ -6,6 +6,7 @@ type Adapter struct {
 	executor.BaseAdapter
 }
 
+// NewAdapter 创建并返回对应的组件。
 func NewAdapter() Adapter {
 	return Adapter{BaseAdapter: executor.NewBaseAdapter("gemini_cli")}
 }

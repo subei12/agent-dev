@@ -10,12 +10,15 @@ import (
 
 type fakeAdapter struct{}
 
+// Name 实现当前函数行为。
 func (fakeAdapter) Name() string { return "codex_cli" }
 
+// BuildCommand builds the requested artifact from the available inputs.
 func (fakeAdapter) BuildCommand(_ context.Context, _ TaskExecutionInput) (*exec.Cmd, error) {
 	return exec.Command("bash", "-lc", "printf 'assistant: done\n'"), nil
 }
 
+// MapOutput 实现当前函数行为。
 func (fakeAdapter) MapOutput(line []byte) ([]runtime.AppendEventCmd, []runtime.AppendTranscriptEntryCmd) {
 	return []runtime.AppendEventCmd{
 			{
@@ -38,6 +41,7 @@ type fakeObserver struct {
 	events         []runtime.AppendEventCmd
 }
 
+// StartSession 实现当前函数行为。
 func (f *fakeObserver) StartSession(_ context.Context, cmd runtime.StartSessionCmd) (runtime.ExecutorSession, error) {
 	f.sessionStarted = true
 	return runtime.ExecutorSession{
@@ -47,24 +51,29 @@ func (f *fakeObserver) StartSession(_ context.Context, cmd runtime.StartSessionC
 	}, nil
 }
 
+// AppendEvent 向当前流追加新的事件或转录条目。
 func (f *fakeObserver) AppendEvent(_ context.Context, cmd runtime.AppendEventCmd) error {
 	f.events = append(f.events, cmd)
 	return nil
 }
 
+// AppendTranscriptEntry 向当前流追加新的事件或转录条目。
 func (f *fakeObserver) AppendTranscriptEntry(context.Context, runtime.AppendTranscriptEntryCmd) error {
 	return nil
 }
 
+// SealSession 完成当前运行时会话的收尾。
 func (f *fakeObserver) SealSession(context.Context, string) error { return nil }
 
 type fakeRunner struct{}
 
+// Run 执行当前组件的主循环或工作流。
 func (fakeRunner) Run(_ context.Context, _ *exec.Cmd, onOutput func([]byte)) error {
 	onOutput([]byte("assistant: done"))
 	return nil
 }
 
+// TestManagerEmitsSessionStartedEvent 验证该路径的预期行为。
 func TestManagerEmitsSessionStartedEvent(t *testing.T) {
 	observer := &fakeObserver{}
 	manager := NewManager(fakeAdapter{}, observer, fakeRunner{})

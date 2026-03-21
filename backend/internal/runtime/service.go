@@ -31,6 +31,7 @@ type ObjectWriter interface {
 	PutJSON(context.Context, string, any) error
 }
 
+// NewService 创建并返回对应的组件。
 func NewService(store Store, publisher ...EventPublisher) Service {
 	var selected EventPublisher
 	if len(publisher) > 0 {
@@ -42,6 +43,7 @@ func NewService(store Store, publisher ...EventPublisher) Service {
 	}
 }
 
+// NewServiceWithDeps 创建并返回对应的组件。
 func NewServiceWithDeps(store Store, publisher EventPublisher, writer ObjectWriter) Service {
 	return &service{
 		store:     store,
@@ -50,7 +52,9 @@ func NewServiceWithDeps(store Store, publisher EventPublisher, writer ObjectWrit
 	}
 }
 
+// StartSession 创建运行时会话、同步 mission presence，并准备 transcript 存储。
 func (s *service) StartSession(ctx context.Context, cmd StartSessionCmd) (ExecutorSession, error) {
+	// 1. 先创建不可变的执行会话记录。
 	if cmd.Status == "" {
 		cmd.Status = "starting"
 	}
@@ -70,6 +74,7 @@ func (s *service) StartSession(ctx context.Context, cmd StartSessionCmd) (Execut
 		return ExecutorSession{}, err
 	}
 
+	// 2. 把活动会话同步到 mission runtime 状态，方便前端展示当前执行归属。
 	if err := s.store.UpsertMissionRuntime(ctx, UpsertMissionRuntimeCmd{
 		MissionID:                cmd.MissionID,
 		AgentID:                  cmd.AgentID,
@@ -81,6 +86,7 @@ func (s *service) StartSession(ctx context.Context, cmd StartSessionCmd) (Execut
 		return ExecutorSession{}, err
 	}
 
+	// 3. 创建 transcript 外壳记录，并向订阅方发布初始 session 事件。
 	if _, err := s.store.CreateTranscript(ctx, CreateTranscriptCmd{
 		ExecutorSessionID: session.ID,
 		MissionID:         cmd.MissionID,
@@ -97,6 +103,7 @@ func (s *service) StartSession(ctx context.Context, cmd StartSessionCmd) (Execut
 	return session, nil
 }
 
+// AppendEvent 向当前流追加新的事件或转录条目。
 func (s *service) AppendEvent(ctx context.Context, cmd AppendEventCmd) error {
 	if err := s.store.CreateEvent(ctx, cmd); err != nil {
 		return err
@@ -105,6 +112,7 @@ func (s *service) AppendEvent(ctx context.Context, cmd AppendEventCmd) error {
 	return nil
 }
 
+// AppendTranscriptEntry 向当前流追加新的事件或转录条目。
 func (s *service) AppendTranscriptEntry(ctx context.Context, cmd AppendTranscriptEntryCmd) error {
 	transcript, err := s.store.GetTranscriptBySession(ctx, cmd.ExecutorSessionID)
 	if err != nil {
@@ -121,7 +129,9 @@ func (s *service) AppendTranscriptEntry(ctx context.Context, cmd AppendTranscrip
 	return nil
 }
 
+// SealSession 完成当前运行时会话的收尾，并持久化脱敏 transcript 产物。
 func (s *service) SealSession(ctx context.Context, sessionID string) error {
+	// 1. 先在数据库里把 session 和 transcript 标记为 sealed。
 	session, err := s.store.UpdateSessionStatus(ctx, sessionID, "completed")
 	if err != nil {
 		return err
@@ -133,9 +143,13 @@ func (s *service) SealSession(ctx context.Context, sessionID string) error {
 	if _, err := s.store.UpdateTranscriptStatus(ctx, transcript.ID, "sealed"); err != nil {
 		return err
 	}
+
+	// 2. 物化脱敏 transcript 对象，供审计和归档流程使用。
 	if err := s.persistRedactedTranscript(ctx, transcript, sessionID); err != nil {
 		return err
 	}
+
+	// 3. 重置实时 presence 和 mission runtime 状态为已完成快照。
 	if err := s.store.UpsertPresence(ctx, UpsertPresenceCmd{
 		AgentID:                  session.AgentID,
 		Availability:             "online",
@@ -160,18 +174,22 @@ func (s *service) SealSession(ctx context.Context, sessionID string) error {
 	return nil
 }
 
+// ListMissionRuntimes 返回当前查询对应的集合结果。
 func (s *service) ListMissionRuntimes(ctx context.Context, missionID string) ([]MissionAgentRuntime, error) {
 	return s.store.ListMissionRuntimes(ctx, missionID)
 }
 
+// GetSession 返回请求的资源或值。
 func (s *service) GetSession(ctx context.Context, sessionID string) (ExecutorSession, error) {
 	return s.store.GetSession(ctx, sessionID)
 }
 
+// ListSessionEvents 返回当前查询对应的集合结果。
 func (s *service) ListSessionEvents(ctx context.Context, sessionID string) ([]RuntimeEvent, error) {
 	return s.store.ListSessionEvents(ctx, sessionID)
 }
 
+// GetTranscriptView returns the requested transcript view and records access audits for redacted reads.
 func (s *service) GetTranscriptView(ctx context.Context, sessionID, actorUserID, view string) (TranscriptView, error) {
 	transcript, err := s.store.GetTranscriptBySession(ctx, sessionID)
 	if err != nil {
@@ -192,10 +210,12 @@ func (s *service) GetTranscriptView(ctx context.Context, sessionID, actorUserID,
 	return result, nil
 }
 
+// ListAccessAudits 返回当前查询对应的集合结果。
 func (s *service) ListAccessAudits(ctx context.Context, sessionID string) ([]TranscriptAccessAudit, error) {
 	return s.store.ListAccessAudits(ctx, sessionID)
 }
 
+// publish 将运行时通知分发到 mission 级和 session 级 SSE 通道。
 func (s *service) publish(missionID, sessionID, eventType string) {
 	if s.publisher == nil {
 		return
@@ -216,6 +236,7 @@ func (s *service) publish(missionID, sessionID, eventType string) {
 	}
 }
 
+// persistRedactedTranscript 将 sealed 后的脱敏 transcript 写入对象存储。
 func (s *service) persistRedactedTranscript(ctx context.Context, transcript Transcript, sessionID string) error {
 	if s.writer == nil || transcript.RedactedObjectKey == "" {
 		return nil
@@ -233,6 +254,7 @@ func (s *service) persistRedactedTranscript(ctx context.Context, transcript Tran
 	return s.writer.PutJSON(ctx, transcript.RedactedObjectKey, payload)
 }
 
+// transcriptRedactedObjectKey 实现当前函数行为。
 func transcriptRedactedObjectKey(sessionID string) string {
 	return "transcripts/" + sessionID + "/redacted.json"
 }

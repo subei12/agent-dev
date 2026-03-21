@@ -19,12 +19,14 @@ type Repository struct {
 	queries *sqlc.Queries
 }
 
+// NewRepository 创建并返回对应的组件。
 func NewRepository(pool *pgxpool.Pool) *Repository {
 	return &Repository{
 		queries: sqlc.New(pool),
 	}
 }
 
+// Create 创建请求的资源或记录。
 func (r *Repository) Create(ctx context.Context, params CreateProjectParams) (sqlc.Project, error) {
 	description := pgtype.Text{}
 	if params.Description != "" {

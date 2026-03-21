@@ -21,15 +21,18 @@ type fakeWriter struct {
 	objectKeys []string
 }
 
+// PublishToChannel 将当前事件或负载发布到目标位置。
 func (f *fakePublisher) PublishToChannel(channel string, _ []byte) {
 	f.channels = append(f.channels, channel)
 }
 
+// PutJSON 实现当前函数行为。
 func (f *fakeWriter) PutJSON(_ context.Context, objectKey string, _ any) error {
 	f.objectKeys = append(f.objectKeys, objectKey)
 	return nil
 }
 
+// CreateSession 创建请求的资源或记录。
 func (f *fakeStore) CreateSession(_ context.Context, cmd StartSessionCmd) (ExecutorSession, error) {
 	session := ExecutorSession{
 		ID:                "session_1",
@@ -44,9 +47,12 @@ func (f *fakeStore) CreateSession(_ context.Context, cmd StartSessionCmd) (Execu
 	return session, nil
 }
 
+// UpsertPresence 实现当前函数行为。
 func (f *fakeStore) UpsertPresence(context.Context, UpsertPresenceCmd) error { return nil }
+// UpsertMissionRuntime 实现当前函数行为。
 func (f *fakeStore) UpsertMissionRuntime(context.Context, UpsertMissionRuntimeCmd) error { return nil }
 
+// CreateTranscript 创建请求的资源或记录。
 func (f *fakeStore) CreateTranscript(_ context.Context, cmd CreateTranscriptCmd) (Transcript, error) {
 	transcript := Transcript{
 		ID:                "transcript_1",
@@ -61,16 +67,20 @@ func (f *fakeStore) CreateTranscript(_ context.Context, cmd CreateTranscriptCmd)
 	return transcript, nil
 }
 
+// CreateEvent 创建请求的资源或记录。
 func (f *fakeStore) CreateEvent(context.Context, AppendEventCmd) error { return nil }
 
+// GetTranscriptBySession 返回请求的资源或值。
 func (f *fakeStore) GetTranscriptBySession(_ context.Context, sessionID string) (Transcript, error) {
 	return f.transcripts[sessionID], nil
 }
 
+// NextTranscriptSeq 实现当前函数行为。
 func (f *fakeStore) NextTranscriptSeq(_ context.Context, _ string) (int32, error) {
 	return int32(len(f.entries) + 1), nil
 }
 
+// CreateTranscriptEntry 创建请求的资源或记录。
 func (f *fakeStore) CreateTranscriptEntry(_ context.Context, transcriptID string, seq int32, cmd AppendTranscriptEntryCmd) error {
 	f.entries = append(f.entries, TranscriptEntry{
 		ID:           "entry_1",
@@ -84,10 +94,12 @@ func (f *fakeStore) CreateTranscriptEntry(_ context.Context, transcriptID string
 	return nil
 }
 
+// GetSession 返回请求的资源或值。
 func (f *fakeStore) GetSession(_ context.Context, sessionID string) (ExecutorSession, error) {
 	return f.sessions[sessionID], nil
 }
 
+// UpdateSessionStatus 更新请求的资源状态。
 func (f *fakeStore) UpdateSessionStatus(_ context.Context, sessionID, status string) (ExecutorSession, error) {
 	session := f.sessions[sessionID]
 	session.Status = status
@@ -95,6 +107,7 @@ func (f *fakeStore) UpdateSessionStatus(_ context.Context, sessionID, status str
 	return session, nil
 }
 
+// UpdateTranscriptStatus 更新请求的资源状态。
 func (f *fakeStore) UpdateTranscriptStatus(_ context.Context, transcriptID, status string) (Transcript, error) {
 	for key, transcript := range f.transcripts {
 		if transcript.ID == transcriptID {
@@ -106,23 +119,29 @@ func (f *fakeStore) UpdateTranscriptStatus(_ context.Context, transcriptID, stat
 	return Transcript{}, nil
 }
 
+// ListMissionRuntimes 返回当前查询对应的集合结果。
 func (f *fakeStore) ListMissionRuntimes(context.Context, string) ([]MissionAgentRuntime, error) {
 	return nil, nil
 }
 
+// ListSessionEvents 返回当前查询对应的集合结果。
 func (f *fakeStore) ListSessionEvents(context.Context, string) ([]RuntimeEvent, error) {
 	return nil, nil
 }
 
+// ListTranscriptEntries 返回当前查询对应的集合结果。
 func (f *fakeStore) ListTranscriptEntries(context.Context, string) ([]TranscriptEntry, error) {
 	return f.entries, nil
 }
 
+// CreateAccessAudit 创建请求的资源或记录。
 func (f *fakeStore) CreateAccessAudit(context.Context, string, string, string) error { return nil }
+// ListAccessAudits 返回当前查询对应的集合结果。
 func (f *fakeStore) ListAccessAudits(context.Context, string) ([]TranscriptAccessAudit, error) {
 	return nil, nil
 }
 
+// TestRedactorMasksKnownSecrets 验证该路径的预期行为。
 func TestRedactorMasksKnownSecrets(t *testing.T) {
 	got := Redact("token=abc123 bearer sk-live-xyz")
 	if strings.Contains(got, "abc123") || strings.Contains(got, "sk-live-xyz") {
@@ -133,6 +152,7 @@ func TestRedactorMasksKnownSecrets(t *testing.T) {
 	}
 }
 
+// TestSessionLifecycle 验证该路径的预期行为。
 func TestSessionLifecycle(t *testing.T) {
 	store := &fakeStore{
 		sessions:    map[string]ExecutorSession{},

@@ -43,10 +43,12 @@ type service struct {
 	queries *sqlc.Queries
 }
 
+// NewService 创建并返回对应的组件。
 func NewService(pool *pgxpool.Pool) Service {
 	return &service{queries: sqlc.New(pool)}
 }
 
+// Create 创建请求的资源或记录。
 func (s *service) Create(ctx context.Context, cmd CreateApprovalCmd) (Approval, error) {
 	intent := cmd.Intent
 	if len(intent) == 0 {
@@ -75,6 +77,7 @@ func (s *service) Create(ctx context.Context, cmd CreateApprovalCmd) (Approval, 
 	return approvalFromRow(row), nil
 }
 
+// Get 返回请求的资源或值。
 func (s *service) Get(ctx context.Context, approvalID string) (Approval, error) {
 	row, err := s.queries.GetApproval(ctx, approvalID)
 	if err != nil {
@@ -83,6 +86,7 @@ func (s *service) Get(ctx context.Context, approvalID string) (Approval, error) 
 	return approvalFromRow(row), nil
 }
 
+// approvalFromRow 实现当前函数行为。
 func approvalFromRow(row sqlc.Approval) Approval {
 	return Approval{
 		ID:          row.ID,
@@ -97,6 +101,7 @@ func approvalFromRow(row sqlc.Approval) Approval {
 	}
 }
 
+// textValue 实现当前函数行为。
 func textValue(value string) pgtype.Text {
 	if value == "" {
 		return pgtype.Text{}
@@ -104,6 +109,7 @@ func textValue(value string) pgtype.Text {
 	return pgtype.Text{String: value, Valid: true}
 }
 
+// stringValue 实现当前函数行为。
 func stringValue(value pgtype.Text) string {
 	if !value.Valid {
 		return ""

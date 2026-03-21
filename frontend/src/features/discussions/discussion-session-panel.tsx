@@ -8,6 +8,9 @@ type DiscussionSessionPanelProps = {
   isSubmitting: boolean;
 };
 
+/**
+ * DiscussionSessionPanel 渲染或处理当前前端行为。
+ */
 export function DiscussionSessionPanel({ sessions, onCreateSession, isSubmitting }: DiscussionSessionPanelProps) {
   const [topic, setTopic] = useState("");
 

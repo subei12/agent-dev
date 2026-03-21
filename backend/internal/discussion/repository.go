@@ -14,10 +14,12 @@ type Repository struct {
 	pool *pgxpool.Pool
 }
 
+// NewRepository 创建并返回对应的组件。
 func NewRepository(pool *pgxpool.Pool) *Repository {
 	return &Repository{pool: pool}
 }
 
+// CreateSession 创建请求的资源或记录。
 func (r *Repository) CreateSession(ctx context.Context, cmd CreateSessionCmd) (Session, error) {
 	row, err := sqlc.New(r.pool).CreateDiscussionSession(ctx, sqlc.CreateDiscussionSessionParams{
 		ID:                 uuid.NewString(),
@@ -32,6 +34,7 @@ func (r *Repository) CreateSession(ctx context.Context, cmd CreateSessionCmd) (S
 	return sessionFromRow(row), nil
 }
 
+// ListSessions 返回当前查询对应的集合结果。
 func (r *Repository) ListSessions(ctx context.Context, missionID string) ([]Session, error) {
 	rows, err := sqlc.New(r.pool).ListDiscussionSessionsByMission(ctx, missionID)
 	if err != nil {
@@ -44,6 +47,7 @@ func (r *Repository) ListSessions(ctx context.Context, missionID string) ([]Sess
 	return sessions, nil
 }
 
+// CreateRound 创建请求的资源或记录。
 func (r *Repository) CreateRound(ctx context.Context, cmd CreateRoundCmd) (Round, error) {
 	roundNo, err := sqlc.New(r.pool).GetNextDiscussionRoundNumber(ctx, cmd.SessionID)
 	if err != nil {
@@ -68,6 +72,7 @@ func (r *Repository) CreateRound(ctx context.Context, cmd CreateRoundCmd) (Round
 	return roundFromRow(row), nil
 }
 
+// sessionFromRow 实现当前函数行为。
 func sessionFromRow(row sqlc.DiscussionSession) Session {
 	return Session{
 		ID:                 row.ID,
@@ -79,6 +84,7 @@ func sessionFromRow(row sqlc.DiscussionSession) Session {
 	}
 }
 
+// roundFromRow 实现当前函数行为。
 func roundFromRow(row sqlc.DiscussionRound) Round {
 	return Round{
 		ID:                        row.ID,
@@ -95,6 +101,7 @@ func roundFromRow(row sqlc.DiscussionRound) Round {
 	}
 }
 
+// jsonValue 实现当前函数行为。
 func jsonValue(value, fallback []byte) []byte {
 	if len(value) == 0 {
 		return fallback

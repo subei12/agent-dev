@@ -1,5 +1,8 @@
 import { TranscriptAccessAudit } from "../../lib/api";
 
+/**
+ * TranscriptAccessAuditTable 渲染或处理当前前端行为。
+ */
 export function TranscriptAccessAuditTable({ audits }: { audits: TranscriptAccessAudit[] }) {
   return (
     <section className="panel">

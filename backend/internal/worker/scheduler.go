@@ -18,6 +18,7 @@ type Scheduler struct {
 	dispatcher ClaimDispatcher
 }
 
+// NewScheduler 创建并返回对应的组件。
 func NewScheduler(source ClaimSource, dispatcher ClaimDispatcher) *Scheduler {
 	return &Scheduler{
 		source:     source,
@@ -25,6 +26,7 @@ func NewScheduler(source ClaimSource, dispatcher ClaimDispatcher) *Scheduler {
 	}
 }
 
+// PollOnce 执行一次调度轮询。
 func (s *Scheduler) PollOnce(ctx context.Context) error {
 	claimIDs, err := s.source.ListActiveClaimIDs(ctx)
 	if err != nil {
@@ -39,6 +41,7 @@ func (s *Scheduler) PollOnce(ctx context.Context) error {
 	return nil
 }
 
+// Run 执行当前组件的主循环或工作流。
 func (s *Scheduler) Run(ctx context.Context, interval time.Duration) error {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()

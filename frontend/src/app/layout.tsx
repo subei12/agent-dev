@@ -6,6 +6,9 @@ const navItems = [
   { to: "/runtime/sessions/session_1", label: "Runtime" }
 ];
 
+/**
+ * AppLayout 渲染或处理当前前端行为。
+ */
 export function AppLayout() {
   return (
     <div className="app-frame">

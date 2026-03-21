@@ -35,10 +35,12 @@ type Repository struct {
 	pool *pgxpool.Pool
 }
 
+// NewRepository 创建并返回对应的组件。
 func NewRepository(pool *pgxpool.Pool) *Repository {
 	return &Repository{pool: pool}
 }
 
+// CreateSession 创建请求的资源或记录。
 func (r *Repository) CreateSession(ctx context.Context, cmd StartSessionCmd) (ExecutorSession, error) {
 	row, err := sqlc.New(r.pool).CreateExecutorSession(ctx, sqlc.CreateExecutorSessionParams{
 		ID:                uuid.NewString(),
@@ -55,6 +57,7 @@ func (r *Repository) CreateSession(ctx context.Context, cmd StartSessionCmd) (Ex
 	return sessionFromRow(row), nil
 }
 
+// UpsertPresence 实现当前函数行为。
 func (r *Repository) UpsertPresence(ctx context.Context, cmd UpsertPresenceCmd) error {
 	_, err := sqlc.New(r.pool).UpsertAgentPresence(ctx, sqlc.UpsertAgentPresenceParams{
 		AgentID:                  cmd.AgentID,
@@ -66,6 +69,7 @@ func (r *Repository) UpsertPresence(ctx context.Context, cmd UpsertPresenceCmd) 
 	return err
 }
 
+// UpsertMissionRuntime 实现当前函数行为。
 func (r *Repository) UpsertMissionRuntime(ctx context.Context, cmd UpsertMissionRuntimeCmd) error {
 	_, err := sqlc.New(r.pool).UpsertMissionAgentRuntime(ctx, sqlc.UpsertMissionAgentRuntimeParams{
 		ID:                       uuid.NewString(),
@@ -82,6 +86,7 @@ func (r *Repository) UpsertMissionRuntime(ctx context.Context, cmd UpsertMission
 	return err
 }
 
+// CreateTranscript 创建请求的资源或记录。
 func (r *Repository) CreateTranscript(ctx context.Context, cmd CreateTranscriptCmd) (Transcript, error) {
 	row, err := sqlc.New(r.pool).CreateExecutorTranscript(ctx, sqlc.CreateExecutorTranscriptParams{
 		ID:                   uuid.NewString(),
@@ -99,6 +104,7 @@ func (r *Repository) CreateTranscript(ctx context.Context, cmd CreateTranscriptC
 	return transcriptFromRow(row), nil
 }
 
+// CreateEvent 创建请求的资源或记录。
 func (r *Repository) CreateEvent(ctx context.Context, cmd AppendEventCmd) error {
 	_, err := sqlc.New(r.pool).CreateAgentRuntimeEvent(ctx, sqlc.CreateAgentRuntimeEventParams{
 		ID:                uuid.NewString(),
@@ -118,6 +124,7 @@ func (r *Repository) CreateEvent(ctx context.Context, cmd AppendEventCmd) error 
 	return err
 }
 
+// GetTranscriptBySession 返回请求的资源或值。
 func (r *Repository) GetTranscriptBySession(ctx context.Context, sessionID string) (Transcript, error) {
 	row, err := sqlc.New(r.pool).GetExecutorTranscriptBySession(ctx, sessionID)
 	if err != nil {
@@ -126,10 +133,12 @@ func (r *Repository) GetTranscriptBySession(ctx context.Context, sessionID strin
 	return transcriptFromRow(row), nil
 }
 
+// NextTranscriptSeq 实现当前函数行为。
 func (r *Repository) NextTranscriptSeq(ctx context.Context, transcriptID string) (int32, error) {
 	return sqlc.New(r.pool).GetNextTranscriptEntrySeq(ctx, transcriptID)
 }
 
+// CreateTranscriptEntry 创建请求的资源或记录。
 func (r *Repository) CreateTranscriptEntry(ctx context.Context, transcriptID string, seq int32, cmd AppendTranscriptEntryCmd) error {
 	_, err := sqlc.New(r.pool).CreateExecutorTranscriptEntry(ctx, sqlc.CreateExecutorTranscriptEntryParams{
 		ID:           uuid.NewString(),
@@ -144,6 +153,7 @@ func (r *Repository) CreateTranscriptEntry(ctx context.Context, transcriptID str
 	return err
 }
 
+// GetSession 返回请求的资源或值。
 func (r *Repository) GetSession(ctx context.Context, sessionID string) (ExecutorSession, error) {
 	row, err := sqlc.New(r.pool).GetExecutorSession(ctx, sessionID)
 	if err != nil {
@@ -152,6 +162,7 @@ func (r *Repository) GetSession(ctx context.Context, sessionID string) (Executor
 	return sessionFromRow(row), nil
 }
 
+// UpdateSessionStatus 更新请求的资源状态。
 func (r *Repository) UpdateSessionStatus(ctx context.Context, sessionID, status string) (ExecutorSession, error) {
 	row, err := sqlc.New(r.pool).UpdateExecutorSessionStatus(ctx, sqlc.UpdateExecutorSessionStatusParams{
 		ID:     sessionID,
@@ -163,6 +174,7 @@ func (r *Repository) UpdateSessionStatus(ctx context.Context, sessionID, status 
 	return sessionFromRow(row), nil
 }
 
+// UpdateTranscriptStatus 更新请求的资源状态。
 func (r *Repository) UpdateTranscriptStatus(ctx context.Context, transcriptID, status string) (Transcript, error) {
 	row, err := sqlc.New(r.pool).UpdateExecutorTranscriptStatus(ctx, sqlc.UpdateExecutorTranscriptStatusParams{
 		ID:     transcriptID,
@@ -174,6 +186,7 @@ func (r *Repository) UpdateTranscriptStatus(ctx context.Context, transcriptID, s
 	return transcriptFromRow(row), nil
 }
 
+// ListMissionRuntimes 返回当前查询对应的集合结果。
 func (r *Repository) ListMissionRuntimes(ctx context.Context, missionID string) ([]MissionAgentRuntime, error) {
 	rows, err := sqlc.New(r.pool).ListMissionAgentRuntimes(ctx, missionID)
 	if err != nil {
@@ -186,6 +199,7 @@ func (r *Repository) ListMissionRuntimes(ctx context.Context, missionID string) 
 	return items, nil
 }
 
+// ListSessionEvents 返回当前查询对应的集合结果。
 func (r *Repository) ListSessionEvents(ctx context.Context, sessionID string) ([]RuntimeEvent, error) {
 	rows, err := sqlc.New(r.pool).ListAgentRuntimeEventsBySession(ctx, sessionID)
 	if err != nil {
@@ -198,6 +212,7 @@ func (r *Repository) ListSessionEvents(ctx context.Context, sessionID string) ([
 	return items, nil
 }
 
+// ListTranscriptEntries 返回当前查询对应的集合结果。
 func (r *Repository) ListTranscriptEntries(ctx context.Context, sessionID string) ([]TranscriptEntry, error) {
 	rows, err := sqlc.New(r.pool).ListExecutorTranscriptEntriesBySession(ctx, sessionID)
 	if err != nil {
@@ -210,6 +225,7 @@ func (r *Repository) ListTranscriptEntries(ctx context.Context, sessionID string
 	return items, nil
 }
 
+// CreateAccessAudit 创建请求的资源或记录。
 func (r *Repository) CreateAccessAudit(ctx context.Context, sessionID, actorUserID, accessMode string) error {
 	transcript, err := r.GetTranscriptBySession(ctx, sessionID)
 	if err != nil {
@@ -225,6 +241,7 @@ func (r *Repository) CreateAccessAudit(ctx context.Context, sessionID, actorUser
 	return err
 }
 
+// ListAccessAudits 返回当前查询对应的集合结果。
 func (r *Repository) ListAccessAudits(ctx context.Context, sessionID string) ([]TranscriptAccessAudit, error) {
 	rows, err := sqlc.New(r.pool).ListTranscriptAccessAuditsBySession(ctx, sessionID)
 	if err != nil {
@@ -237,6 +254,7 @@ func (r *Repository) ListAccessAudits(ctx context.Context, sessionID string) ([]
 	return items, nil
 }
 
+// sessionFromRow 实现当前函数行为。
 func sessionFromRow(row sqlc.ExecutorSession) ExecutorSession {
 	return ExecutorSession{
 		ID:                row.ID,
@@ -251,6 +269,7 @@ func sessionFromRow(row sqlc.ExecutorSession) ExecutorSession {
 	}
 }
 
+// transcriptFromRow 实现当前函数行为。
 func transcriptFromRow(row sqlc.ExecutorTranscript) Transcript {
 	return Transcript{
 		ID:                    row.ID,
@@ -266,6 +285,7 @@ func transcriptFromRow(row sqlc.ExecutorTranscript) Transcript {
 	}
 }
 
+// missionRuntimeFromRow 实现当前函数行为。
 func missionRuntimeFromRow(row sqlc.MissionAgentRuntime) MissionAgentRuntime {
 	return MissionAgentRuntime{
 		ID:                       row.ID,
@@ -282,6 +302,7 @@ func missionRuntimeFromRow(row sqlc.MissionAgentRuntime) MissionAgentRuntime {
 	}
 }
 
+// eventFromRow 实现当前函数行为。
 func eventFromRow(row sqlc.AgentRuntimeEvent) RuntimeEvent {
 	return RuntimeEvent{
 		ID:                row.ID,
@@ -301,6 +322,7 @@ func eventFromRow(row sqlc.AgentRuntimeEvent) RuntimeEvent {
 	}
 }
 
+// transcriptEntryFromRow 实现当前函数行为。
 func transcriptEntryFromRow(row sqlc.ExecutorTranscriptEntry) TranscriptEntry {
 	return TranscriptEntry{
 		ID:           row.ID,
@@ -315,6 +337,7 @@ func transcriptEntryFromRow(row sqlc.ExecutorTranscriptEntry) TranscriptEntry {
 	}
 }
 
+// accessAuditFromRow 实现当前函数行为。
 func accessAuditFromRow(row sqlc.TranscriptAccessAudit) TranscriptAccessAudit {
 	return TranscriptAccessAudit{
 		ID:           row.ID,
@@ -326,6 +349,7 @@ func accessAuditFromRow(row sqlc.TranscriptAccessAudit) TranscriptAccessAudit {
 	}
 }
 
+// jsonValue 实现当前函数行为。
 func jsonValue(value json.RawMessage, fallback []byte) []byte {
 	if len(value) == 0 {
 		return fallback
@@ -333,6 +357,7 @@ func jsonValue(value json.RawMessage, fallback []byte) []byte {
 	return []byte(value)
 }
 
+// textValue 实现当前函数行为。
 func textValue(value string) pgtype.Text {
 	if value == "" {
 		return pgtype.Text{}
@@ -340,6 +365,7 @@ func textValue(value string) pgtype.Text {
 	return pgtype.Text{String: value, Valid: true}
 }
 
+// stringValue 实现当前函数行为。
 func stringValue(value pgtype.Text) string {
 	if !value.Valid {
 		return ""
@@ -347,6 +373,7 @@ func stringValue(value pgtype.Text) string {
 	return value.String
 }
 
+// timeValue 实现当前函数行为。
 func timeValue(value pgtype.Timestamptz) time.Time {
 	if !value.Valid {
 		return time.Time{}

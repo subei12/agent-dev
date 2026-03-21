@@ -2,6 +2,9 @@ import { Link } from "react-router-dom";
 
 import { PageShell } from "../components/page-shell";
 
+/**
+ * HomePage 渲染当前路由对应的页面级工作区。
+ */
 export function HomePage() {
   return (
     <PageShell

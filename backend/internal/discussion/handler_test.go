@@ -14,18 +14,22 @@ type fakeService struct {
 	createSession func(context.Context, CreateSessionCmd) (Session, error)
 }
 
+// CreateSession 创建请求的资源或记录。
 func (f fakeService) CreateSession(ctx context.Context, cmd CreateSessionCmd) (Session, error) {
 	return f.createSession(ctx, cmd)
 }
 
+// ListSessions 返回当前查询对应的集合结果。
 func (f fakeService) ListSessions(context.Context, string) ([]Session, error) {
 	return nil, nil
 }
 
+// CreateRound 创建请求的资源或记录。
 func (f fakeService) CreateRound(context.Context, CreateRoundCmd) (Round, error) {
 	return Round{}, nil
 }
 
+// TestCreateDiscussionSession 验证该路径的预期行为。
 func TestCreateDiscussionSession(t *testing.T) {
 	svc := fakeService{
 		createSession: func(_ context.Context, cmd CreateSessionCmd) (Session, error) {

@@ -15,6 +15,7 @@ type Config struct {
 	S3Bucket    string
 }
 
+// Load 从配置来源加载配置或状态。
 func Load() (Config, error) {
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
@@ -62,6 +63,7 @@ func Load() (Config, error) {
 	}, nil
 }
 
+// MustLoad 返回结果，失败时直接 panic。
 func MustLoad() Config {
 	cfg, err := Load()
 	if err != nil {

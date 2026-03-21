@@ -25,6 +25,7 @@ type Manager struct {
 	runner   Runner
 }
 
+// NewManager 创建并返回对应的组件。
 func NewManager(adapter Adapter, observer RuntimeObserver, runner Runner) *Manager {
 	return &Manager{
 		adapter:  adapter,
@@ -33,6 +34,7 @@ func NewManager(adapter Adapter, observer RuntimeObserver, runner Runner) *Manag
 	}
 }
 
+// RunTask 执行当前组件的主循环或工作流。
 func (m *Manager) RunTask(ctx context.Context, input TaskExecutionInput) error {
 	session, err := m.observer.StartSession(ctx, runtime.StartSessionCmd{
 		MissionID:         input.MissionID,

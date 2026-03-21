@@ -8,6 +8,7 @@ import (
 	"github.com/pashagolub/pgxmock/v4"
 )
 
+// TestRequireReturnsForbiddenWhenGrantMissing 验证该路径的预期行为。
 func TestRequireReturnsForbiddenWhenGrantMissing(t *testing.T) {
 	mock, err := pgxmock.NewPool()
 	if err != nil {

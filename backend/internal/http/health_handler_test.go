@@ -6,6 +6,7 @@ import (
 	"testing"
 )
 
+// TestHealthHandler 验证该路径的预期行为。
 func TestHealthHandler(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 	rec := httptest.NewRecorder()

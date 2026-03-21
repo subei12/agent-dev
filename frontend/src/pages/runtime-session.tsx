@@ -12,6 +12,9 @@ import { TranscriptInspector } from "../features/runtime/transcript-inspector";
 
 const projectId = "proj_1";
 
+/**
+ * RuntimeSessionPage 渲染当前路由对应的页面级工作区。
+ */
 export function RuntimeSessionPage() {
   const { sessionId = "session_1" } = useParams();
   const queryClient = useQueryClient();

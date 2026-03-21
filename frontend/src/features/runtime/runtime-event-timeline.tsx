@@ -6,6 +6,9 @@ const fallbackEvents: RuntimeEvent[] = [
   { id: "event_3", title: "Waiting admin", type: "waiting_admin", category: "handoff", summary: "task completed without downstream" }
 ];
 
+/**
+ * RuntimeEventTimeline 渲染或处理当前前端行为。
+ */
 export function RuntimeEventTimeline({ events }: { events: RuntimeEvent[] }) {
   const items = events.length > 0 ? events : fallbackEvents;
 

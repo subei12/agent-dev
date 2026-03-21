@@ -16,6 +16,7 @@ type ObjectStore struct {
 	bucket string
 }
 
+// NewMinIO 创建并返回对应的组件。
 func NewMinIO(endpoint, accessKey, secretKey string) (*minio.Client, error) {
 	parsed, err := url.Parse(endpoint)
 	if err != nil {
@@ -28,6 +29,7 @@ func NewMinIO(endpoint, accessKey, secretKey string) (*minio.Client, error) {
 	})
 }
 
+// NewObjectStore 创建并返回对应的组件。
 func NewObjectStore(endpoint, accessKey, secretKey, bucket string) (*ObjectStore, error) {
 	client, err := NewMinIO(endpoint, accessKey, secretKey)
 	if err != nil {
@@ -40,6 +42,7 @@ func NewObjectStore(endpoint, accessKey, secretKey, bucket string) (*ObjectStore
 	}, nil
 }
 
+// PutJSON 实现当前函数行为。
 func (s *ObjectStore) PutJSON(ctx context.Context, objectKey string, value any) error {
 	if err := s.ensureBucket(ctx); err != nil {
 		return err
@@ -56,6 +59,7 @@ func (s *ObjectStore) PutJSON(ctx context.Context, objectKey string, value any) 
 	return err
 }
 
+// PutBytes 实现当前函数行为。
 func (s *ObjectStore) PutBytes(ctx context.Context, objectKey string, data []byte, contentType string) error {
 	if err := s.ensureBucket(ctx); err != nil {
 		return err
@@ -67,6 +71,7 @@ func (s *ObjectStore) PutBytes(ctx context.Context, objectKey string, data []byt
 	return err
 }
 
+// ensureBucket 实现当前函数行为。
 func (s *ObjectStore) ensureBucket(ctx context.Context) error {
 	exists, err := s.client.BucketExists(ctx, s.bucket)
 	if err != nil {

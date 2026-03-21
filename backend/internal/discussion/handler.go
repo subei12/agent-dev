@@ -14,6 +14,7 @@ type Handler struct {
 	authorizer authz.Authorizer
 }
 
+// NewHandler 创建并返回对应的组件。
 func NewHandler(service Service, authorizer ...authz.Authorizer) *Handler {
 	var selected authz.Authorizer
 	if len(authorizer) > 0 {
@@ -22,6 +23,7 @@ func NewHandler(service Service, authorizer ...authz.Authorizer) *Handler {
 	return &Handler{service: service, authorizer: selected}
 }
 
+// RegisterRoutes 实现当前函数行为。
 func (h *Handler) RegisterRoutes(r chi.Router) {
 	r.Route("/api/projects/{projectId}/missions/{missionId}/discussions", func(r chi.Router) {
 		r.Get("/", h.listSessions)
@@ -45,6 +47,7 @@ type createRoundRequest struct {
 	AdoptedDocumentVersionIDs json.RawMessage `json:"adoptedDocumentVersionIds"`
 }
 
+// listSessions 实现当前函数行为。
 func (h *Handler) listSessions(w http.ResponseWriter, r *http.Request) {
 	sessions, err := h.service.ListSessions(r.Context(), chi.URLParam(r, "missionId"))
 	if err != nil {
@@ -54,6 +57,7 @@ func (h *Handler) listSessions(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, sessions)
 }
 
+// createSession 实现当前函数行为。
 func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 	if err := h.require(r); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
@@ -77,6 +81,7 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, session)
 }
 
+// createRound 实现当前函数行为。
 func (h *Handler) createRound(w http.ResponseWriter, r *http.Request) {
 	if err := h.require(r); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
@@ -105,12 +110,14 @@ func (h *Handler) createRound(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, round)
 }
 
+// writeJSON 实现当前函数行为。
 func writeJSON(w http.ResponseWriter, status int, value any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(value)
 }
 
+// require 实现当前函数行为。
 func (h *Handler) require(r *http.Request) error {
 	if h.authorizer == nil {
 		return nil

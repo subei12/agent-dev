@@ -4,6 +4,9 @@ type MissionActionRailProps = {
   isArchiving: boolean;
 };
 
+/**
+ * MissionActionRail 渲染或处理当前前端行为。
+ */
 export function MissionActionRail({ archiveStatus, onArchive, isArchiving }: MissionActionRailProps) {
   return (
     <section className="panel">

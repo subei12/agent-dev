@@ -11,6 +11,7 @@ import (
 	"github.com/your-org/agent-platform/internal/runtime"
 )
 
+// main 启动当前可执行入口。
 func main() {
 	var (
 		missionID         = flag.String("mission-id", "mission_1", "mission id")

@@ -10,6 +10,7 @@ type fakeStore struct {
 	versions  map[string]DocumentVersion
 }
 
+// CreateDocument 创建请求的资源或记录。
 func (f *fakeStore) CreateDocument(_ context.Context, cmd CreateDocumentCmd) (Document, error) {
 	document := Document{
 		ID:        "doc_" + cmd.Title,
@@ -21,6 +22,7 @@ func (f *fakeStore) CreateDocument(_ context.Context, cmd CreateDocumentCmd) (Do
 	return document, nil
 }
 
+// GetDocument 返回请求的资源或值。
 func (f *fakeStore) GetDocument(_ context.Context, missionID, documentID string) (Document, error) {
 	document := f.documents[documentID]
 	if document.MissionID != missionID {
@@ -29,6 +31,7 @@ func (f *fakeStore) GetDocument(_ context.Context, missionID, documentID string)
 	return document, nil
 }
 
+// ListDocuments 返回当前查询对应的集合结果。
 func (f *fakeStore) ListDocuments(_ context.Context, missionID string) ([]Document, error) {
 	documents := make([]Document, 0, len(f.documents))
 	for _, document := range f.documents {
@@ -39,6 +42,7 @@ func (f *fakeStore) ListDocuments(_ context.Context, missionID string) ([]Docume
 	return documents, nil
 }
 
+// NextVersionNumber 实现当前函数行为。
 func (f *fakeStore) NextVersionNumber(_ context.Context, documentID string) (int32, error) {
 	var maxVersion int32
 	for _, version := range f.versions {
@@ -49,6 +53,7 @@ func (f *fakeStore) NextVersionNumber(_ context.Context, documentID string) (int
 	return maxVersion + 1, nil
 }
 
+// CreateVersion 创建请求的资源或记录。
 func (f *fakeStore) CreateVersion(_ context.Context, cmd CreateVersionCmd, versionNumber int32) (DocumentVersion, error) {
 	version := DocumentVersion{
 		ID:            cmd.ContentHash,
@@ -64,10 +69,12 @@ func (f *fakeStore) CreateVersion(_ context.Context, cmd CreateVersionCmd, versi
 	return version, nil
 }
 
+// GetVersion 返回请求的资源或值。
 func (f *fakeStore) GetVersion(_ context.Context, versionID string) (DocumentVersion, error) {
 	return f.versions[versionID], nil
 }
 
+// ListVersions 返回当前查询对应的集合结果。
 func (f *fakeStore) ListVersions(_ context.Context, documentID string) ([]DocumentVersion, error) {
 	versions := make([]DocumentVersion, 0, len(f.versions))
 	for _, version := range f.versions {
@@ -78,6 +85,7 @@ func (f *fakeStore) ListVersions(_ context.Context, documentID string) ([]Docume
 	return versions, nil
 }
 
+// UpdateVersionStatus 更新请求的资源状态。
 func (f *fakeStore) UpdateVersionStatus(_ context.Context, versionID, status string) (DocumentVersion, error) {
 	version := f.versions[versionID]
 	version.Status = status
@@ -85,6 +93,7 @@ func (f *fakeStore) UpdateVersionStatus(_ context.Context, versionID, status str
 	return version, nil
 }
 
+// ClearAdoptedVersions 实现当前函数行为。
 func (f *fakeStore) ClearAdoptedVersions(_ context.Context, documentID string) error {
 	for id, version := range f.versions {
 		if version.DocumentID == documentID && version.Status == "adopted" {
@@ -95,6 +104,7 @@ func (f *fakeStore) ClearAdoptedVersions(_ context.Context, documentID string) e
 	return nil
 }
 
+// SetCurrentAdoptedVersion 实现当前函数行为。
 func (f *fakeStore) SetCurrentAdoptedVersion(ctx context.Context, documentID, versionID string) (Document, error) {
 	_ = f.ClearAdoptedVersions(ctx, documentID)
 	version := f.versions[versionID]
@@ -107,6 +117,7 @@ func (f *fakeStore) SetCurrentAdoptedVersion(ctx context.Context, documentID, ve
 	return document, nil
 }
 
+// TestAdoptDocumentVersionSetsSingleAdoptedVersion 验证该路径的预期行为。
 func TestAdoptDocumentVersionSetsSingleAdoptedVersion(t *testing.T) {
 	store := &fakeStore{
 		documents: map[string]Document{},

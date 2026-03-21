@@ -20,6 +20,9 @@ const fallbackTasks: TaskCard[] = [
   { id: "task-review", title: "Review transcript access policy", type: "review", status: "todo", assignedAgentId: "agent_reviewer" }
 ];
 
+/**
+ * TaskBoard 渲染或处理当前前端行为。
+ */
 export function TaskBoard({
   tasks,
   onClaimTask,

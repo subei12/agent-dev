@@ -13,26 +13,32 @@ type fakeService struct {
 	board TaskBoard
 }
 
+// CreateBoard 创建请求的资源或记录。
 func (f fakeService) CreateBoard(context.Context, CreateBoardCmd) (TaskBoard, error) {
 	return TaskBoard{}, nil
 }
 
+// GetBoard 返回请求的资源或值。
 func (f fakeService) GetBoard(context.Context, string) (TaskBoard, error) {
 	return f.board, nil
 }
 
+// Claim 实现当前函数行为。
 func (f fakeService) Claim(context.Context, ClaimTaskCmd) (TaskClaim, error) {
 	return TaskClaim{}, nil
 }
 
+// CreateHandoff 创建请求的资源或记录。
 func (f fakeService) CreateHandoff(context.Context, CreateHandoffCmd) (TaskHandoff, error) {
 	return TaskHandoff{}, nil
 }
 
+// RequestCheckpoint 实现当前函数行为。
 func (f fakeService) RequestCheckpoint(context.Context, RequestCheckpointCmd) (ReviewCheckpoint, error) {
 	return ReviewCheckpoint{}, nil
 }
 
+// TestGetTaskBoard 验证该路径的预期行为。
 func TestGetTaskBoard(t *testing.T) {
 	handler := NewHandler(fakeService{
 		board: TaskBoard{

@@ -2,6 +2,7 @@ package http
 
 import "net/http"
 
+// healthHandler 实现当前函数行为。
 func healthHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

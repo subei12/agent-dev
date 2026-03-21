@@ -27,14 +27,17 @@ type BaseAdapter struct {
 	name string
 }
 
+// NewBaseAdapter 创建并返回对应的组件。
 func NewBaseAdapter(name string) BaseAdapter {
 	return BaseAdapter{name: name}
 }
 
+// Name 实现当前函数行为。
 func (a BaseAdapter) Name() string {
 	return a.name
 }
 
+// BuildCommand builds the requested artifact from the available inputs.
 func (a BaseAdapter) BuildCommand(ctx context.Context, input TaskExecutionInput) (*exec.Cmd, error) {
 	if input.Command == "" {
 		return nil, fmt.Errorf("command is required")
@@ -42,6 +45,7 @@ func (a BaseAdapter) BuildCommand(ctx context.Context, input TaskExecutionInput)
 	return exec.CommandContext(ctx, input.Command, input.Args...), nil
 }
 
+// MapOutput 实现当前函数行为。
 func (a BaseAdapter) MapOutput(line []byte) ([]runtime.AppendEventCmd, []runtime.AppendTranscriptEntryCmd) {
 	text := string(line)
 	return []runtime.AppendEventCmd{

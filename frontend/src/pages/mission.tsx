@@ -30,6 +30,9 @@ import { RuntimeEventTimeline } from "../features/runtime/runtime-event-timeline
 
 const projectId = "proj_1";
 
+/**
+ * MissionPage 渲染当前路由对应的页面级工作区。
+ */
 export function MissionPage() {
   const { missionId = "mission_1" } = useParams();
   const queryClient = useQueryClient();

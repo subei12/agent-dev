@@ -11,14 +11,17 @@ type Handler struct {
 	hub *Hub
 }
 
+// NewHandler 创建并返回对应的组件。
 func NewHandler(hub *Hub) *Handler {
 	return &Handler{hub: hub}
 }
 
+// RegisterRoutes 实现当前函数行为。
 func (h *Handler) RegisterRoutes(r chi.Router) {
 	r.Get("/api/projects/{projectId}/events/stream", h.stream)
 }
 
+// stream 实现当前函数行为。
 func (h *Handler) stream(w http.ResponseWriter, r *http.Request) {
 	channel := r.URL.Query().Get("channel")
 	if channel == "" {

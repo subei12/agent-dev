@@ -1,5 +1,8 @@
 import { TranscriptView } from "../../lib/api";
 
+/**
+ * TranscriptInspector 渲染或处理当前前端行为。
+ */
 export function TranscriptInspector({ transcript }: { transcript: TranscriptView | null }) {
   return (
     <section className="panel panel--transcript">

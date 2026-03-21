@@ -11,6 +11,7 @@ import (
 	platformdb "github.com/your-org/agent-platform/internal/db"
 )
 
+// main 启动当前可执行入口。
 func main() {
 	ctx := context.Background()
 	cfg := platformconfig.MustLoad()
@@ -28,7 +29,9 @@ func main() {
 	fmt.Println("seeded demo data for proj_1 / mission_1")
 }
 
+// seedDemoData 重置并重新写入确定性的演示项目数据。
 func seedDemoData(ctx context.Context, pool *pgxpool.Pool) error {
+	// 1. 按依赖安全的逆序清理旧的种子数据。
 	tx, err := pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -76,6 +79,7 @@ func seedDemoData(ctx context.Context, pool *pgxpool.Pool) error {
 		}
 	}
 
+	// 2. 写入一致的演示项目、mission、runtime 和 archive 快照，供本地演示使用。
 	inserts := []struct {
 		sql  string
 		args []any
@@ -199,5 +203,6 @@ func seedDemoData(ctx context.Context, pool *pgxpool.Pool) error {
 		}
 	}
 
+	// 3. 仅在所有语句都成功后再提交整批种子数据。
 	return tx.Commit(ctx)
 }

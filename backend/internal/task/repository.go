@@ -14,10 +14,12 @@ type Repository struct {
 	pool *pgxpool.Pool
 }
 
+// NewRepository 创建并返回对应的组件。
 func NewRepository(pool *pgxpool.Pool) *Repository {
 	return &Repository{pool: pool}
 }
 
+// CreateBoard 创建请求的资源或记录。
 func (r *Repository) CreateBoard(ctx context.Context, missionID, title string) (TaskBoard, error) {
 	row, err := sqlc.New(r.pool).CreateTaskBoard(ctx, sqlc.CreateTaskBoardParams{
 		ID:        uuid.NewString(),
@@ -30,6 +32,7 @@ func (r *Repository) CreateBoard(ctx context.Context, missionID, title string) (
 	return boardFromRow(row), nil
 }
 
+// CreateTaskItem 创建请求的资源或记录。
 func (r *Repository) CreateTaskItem(ctx context.Context, boardID string, cmd CreateTaskItemCmd) (TaskItem, error) {
 	row, err := sqlc.New(r.pool).CreateTaskItem(ctx, sqlc.CreateTaskItemParams{
 		ID:                        uuid.NewString(),
@@ -50,6 +53,7 @@ func (r *Repository) CreateTaskItem(ctx context.Context, boardID string, cmd Cre
 	return itemFromRow(row), nil
 }
 
+// GetBoard 返回请求的资源或值。
 func (r *Repository) GetBoard(ctx context.Context, missionID string) (TaskBoard, error) {
 	row, err := sqlc.New(r.pool).GetLatestTaskBoardByMission(ctx, missionID)
 	if err != nil {
@@ -58,6 +62,7 @@ func (r *Repository) GetBoard(ctx context.Context, missionID string) (TaskBoard,
 	return boardFromRow(row), nil
 }
 
+// ListTaskItems 返回当前查询对应的集合结果。
 func (r *Repository) ListTaskItems(ctx context.Context, boardID string) ([]TaskItem, error) {
 	rows, err := sqlc.New(r.pool).ListTaskItemsByBoard(ctx, boardID)
 	if err != nil {
@@ -70,6 +75,7 @@ func (r *Repository) ListTaskItems(ctx context.Context, boardID string) ([]TaskI
 	return items, nil
 }
 
+// GetTaskItem 返回请求的资源或值。
 func (r *Repository) GetTaskItem(ctx context.Context, taskItemID string) (TaskItem, error) {
 	row, err := sqlc.New(r.pool).GetTaskItem(ctx, taskItemID)
 	if err != nil {
@@ -78,6 +84,7 @@ func (r *Repository) GetTaskItem(ctx context.Context, taskItemID string) (TaskIt
 	return itemFromRow(row), nil
 }
 
+// UpdateTaskStatus 更新请求的资源状态。
 func (r *Repository) UpdateTaskStatus(ctx context.Context, taskItemID, status string) (TaskItem, error) {
 	row, err := sqlc.New(r.pool).UpdateTaskItemStatus(ctx, sqlc.UpdateTaskItemStatusParams{
 		ID:     taskItemID,
@@ -89,6 +96,7 @@ func (r *Repository) UpdateTaskStatus(ctx context.Context, taskItemID, status st
 	return itemFromRow(row), nil
 }
 
+// CreateClaim 创建请求的资源或记录。
 func (r *Repository) CreateClaim(ctx context.Context, cmd ClaimTaskCmd) (TaskClaim, error) {
 	row, err := sqlc.New(r.pool).CreateTaskClaim(ctx, sqlc.CreateTaskClaimParams{
 		ID:          uuid.NewString(),
@@ -103,6 +111,7 @@ func (r *Repository) CreateClaim(ctx context.Context, cmd ClaimTaskCmd) (TaskCla
 	return claimFromCreateRow(row), nil
 }
 
+// CreateHandoff 创建请求的资源或记录。
 func (r *Repository) CreateHandoff(ctx context.Context, cmd CreateHandoffCmd) (TaskHandoff, error) {
 	row, err := sqlc.New(r.pool).CreateTaskHandoff(ctx, sqlc.CreateTaskHandoffParams{
 		ID:                         uuid.NewString(),
@@ -125,6 +134,7 @@ func (r *Repository) CreateHandoff(ctx context.Context, cmd CreateHandoffCmd) (T
 	return handoffFromRow(row), nil
 }
 
+// CreateCheckpoint 创建请求的资源或记录。
 func (r *Repository) CreateCheckpoint(ctx context.Context, cmd RequestCheckpointCmd) (ReviewCheckpoint, error) {
 	row, err := sqlc.New(r.pool).CreateReviewCheckpoint(ctx, sqlc.CreateReviewCheckpointParams{
 		ID:                        uuid.NewString(),
@@ -144,6 +154,7 @@ func (r *Repository) CreateCheckpoint(ctx context.Context, cmd RequestCheckpoint
 	return checkpointFromRow(row), nil
 }
 
+// boardFromRow 实现当前函数行为。
 func boardFromRow(row sqlc.TaskBoard) TaskBoard {
 	return TaskBoard{
 		ID:        row.ID,
@@ -154,6 +165,7 @@ func boardFromRow(row sqlc.TaskBoard) TaskBoard {
 	}
 }
 
+// itemFromRow 实现当前函数行为。
 func itemFromRow(row sqlc.TaskItem) TaskItem {
 	return TaskItem{
 		ID:                      row.ID,
@@ -172,6 +184,7 @@ func itemFromRow(row sqlc.TaskItem) TaskItem {
 	}
 }
 
+// claimFromRow 实现当前函数行为。
 func claimFromRow(row sqlc.TaskClaim) TaskClaim {
 	return TaskClaim{
 		ID:          row.ID,
@@ -183,6 +196,7 @@ func claimFromRow(row sqlc.TaskClaim) TaskClaim {
 	}
 }
 
+// claimFromCreateRow 实现当前函数行为。
 func claimFromCreateRow(row sqlc.CreateTaskClaimRow) TaskClaim {
 	return TaskClaim{
 		ID:          row.ID,
@@ -194,6 +208,7 @@ func claimFromCreateRow(row sqlc.CreateTaskClaimRow) TaskClaim {
 	}
 }
 
+// handoffFromRow 实现当前函数行为。
 func handoffFromRow(row sqlc.TaskHandoff) TaskHandoff {
 	return TaskHandoff{
 		ID:                       row.ID,
@@ -213,6 +228,7 @@ func handoffFromRow(row sqlc.TaskHandoff) TaskHandoff {
 	}
 }
 
+// checkpointFromRow 实现当前函数行为。
 func checkpointFromRow(row sqlc.ReviewCheckpoint) ReviewCheckpoint {
 	return ReviewCheckpoint{
 		ID:                       row.ID,

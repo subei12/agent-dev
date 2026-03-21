@@ -26,10 +26,12 @@ type Service struct {
 	queries *sqlc.Queries
 }
 
+// New 创建并返回对应的组件。
 func New(db sqlc.DBTX) *Service {
 	return &Service{queries: sqlc.New(db)}
 }
 
+// Require 校验请求的授权能力。
 func (s *Service) Require(ctx context.Context, projectID, actorUserID, capability string) error {
 	if actorUserID == "" {
 		return ErrForbidden
@@ -67,6 +69,7 @@ func (s *Service) Require(ctx context.Context, projectID, actorUserID, capabilit
 	return ErrForbidden
 }
 
+// SeedGrant 为本地开发或测试写入确定性的种子数据。
 func SeedGrant(ctx context.Context, queries *sqlc.Queries, projectID, actorUserID string) error {
 	_, err := queries.UpsertProjectAccessGrant(ctx, sqlc.UpsertProjectAccessGrantParams{
 		ID:                  uuid.NewString(),

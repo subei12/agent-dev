@@ -10,6 +10,7 @@ type RouteRegistrar interface {
 	RegisterRoutes(chi.Router)
 }
 
+// NewRouter 创建并返回对应的组件。
 func NewRouter(registrars ...RouteRegistrar) http.Handler {
 	r := chi.NewRouter()
 	r.Get("/healthz", healthHandler())

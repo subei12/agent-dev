@@ -25,6 +25,7 @@ type APIApp struct {
 	pool   *pgxpool.Pool
 }
 
+// NewAPI 创建并返回对应的组件。
 func NewAPI(cfg platformconfig.Config) (*APIApp, error) {
 	pool, err := platformdb.NewPool(context.Background(), cfg.DatabaseURL)
 	if err != nil {
@@ -90,6 +91,7 @@ func NewAPI(cfg platformconfig.Config) (*APIApp, error) {
 	}, nil
 }
 
+// Run 执行当前组件的主循环或工作流。
 func (a *APIApp) Run(_ context.Context) error {
 	return a.server.ListenAndServe()
 }

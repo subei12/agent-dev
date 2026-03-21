@@ -15,10 +15,12 @@ type fakeStore struct {
 	failed       bool
 }
 
+// GetClaimExecutionContext 返回请求的资源或值。
 func (f *fakeStore) GetClaimExecutionContext(context.Context, string) (ClaimExecutionContext, error) {
 	return f.claimContext, nil
 }
 
+// AcquireClaimExecution 在可用时获取请求的执行锁。
 func (f *fakeStore) AcquireClaimExecution(context.Context, string, string, time.Time) (bool, error) {
 	f.acquired = true
 	if !f.acquireOK {
@@ -27,30 +29,36 @@ func (f *fakeStore) AcquireClaimExecution(context.Context, string, string, time.
 	return true, nil
 }
 
+// TouchClaimHeartbeat 刷新当前心跳或时间戳。
 func (f *fakeStore) TouchClaimHeartbeat(context.Context, string, string) error {
 	return nil
 }
 
+// FailClaim 将当前工作流项标记为失败或可重试。
 func (f *fakeStore) FailClaim(context.Context, string, string, int32) error {
 	f.failed = true
 	return nil
 }
 
+// CompleteClaim 将当前工作流项标记为已完成。
 func (f *fakeStore) CompleteClaim(context.Context, string) error {
 	f.completed = true
 	return nil
 }
 
+// CreateRun 创建请求的资源或记录。
 func (f *fakeStore) CreateRun(_ context.Context, missionID, taskItemID string) (Run, error) {
 	run := Run{ID: "run_1", MissionID: missionID, TaskItemID: taskItemID, Status: "running"}
 	f.runs = append(f.runs, run)
 	return run, nil
 }
 
+// CreateNodeRun 创建请求的资源或记录。
 func (f *fakeStore) CreateNodeRun(context.Context, string, string) (NodeRun, error) {
 	return NodeRun{ID: "node_run_1", Status: "running"}, nil
 }
 
+// UpdateRunStatus 更新请求的资源状态。
 func (f *fakeStore) UpdateRunStatus(context.Context, string, string) error { return nil }
 
 type fakeLauncher struct {
@@ -58,11 +66,13 @@ type fakeLauncher struct {
 	err    error
 }
 
+// RunTask 执行当前组件的主循环或工作流。
 func (f *fakeLauncher) RunTask(context.Context, ExecutorTaskInput) error {
 	f.called = true
 	return f.err
 }
 
+// TestClaimedTaskCreatesRunAndExecutorSession 验证该路径的预期行为。
 func TestClaimedTaskCreatesRunAndExecutorSession(t *testing.T) {
 	store := &fakeStore{
 		claimContext: ClaimExecutionContext{
@@ -95,6 +105,7 @@ func TestClaimedTaskCreatesRunAndExecutorSession(t *testing.T) {
 	}
 }
 
+// TestClaimedTaskFailureMarksClaimForRetry 验证该路径的预期行为。
 func TestClaimedTaskFailureMarksClaimForRetry(t *testing.T) {
 	store := &fakeStore{
 		claimContext: ClaimExecutionContext{
@@ -121,6 +132,7 @@ func TestClaimedTaskFailureMarksClaimForRetry(t *testing.T) {
 	}
 }
 
+// TestClaimAlreadyLockedSkipsExecution 验证该路径的预期行为。
 func TestClaimAlreadyLockedSkipsExecution(t *testing.T) {
 	store := &fakeStore{
 		claimContext: ClaimExecutionContext{

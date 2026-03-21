@@ -212,6 +212,9 @@ export async function getTranscriptAccessAudits(
   }
 }
 
+/**
+ * createDiscussionSession 向后端 API 发送写操作。
+ */
 export function createDiscussionSession(projectId: string, missionId: string, topic: string) {
   return send<DiscussionSession>(`/api/projects/${projectId}/missions/${missionId}/discussions`, "POST", {
     topic,
@@ -219,6 +222,9 @@ export function createDiscussionSession(projectId: string, missionId: string, to
   });
 }
 
+/**
+ * createDocument 向后端 API 发送写操作。
+ */
 export function createDocument(projectId: string, missionId: string, title: string, kind: string) {
   return send<DocumentItem>(`/api/projects/${projectId}/missions/${missionId}/documents`, "POST", {
     title,
@@ -240,6 +246,9 @@ export async function getDocumentVersions(
   }
 }
 
+/**
+ * createDocumentVersion 向后端 API 发送写操作。
+ */
 export function createDocumentVersion(
   projectId: string,
   missionId: string,
@@ -261,6 +270,9 @@ export function createDocumentVersion(
   );
 }
 
+/**
+ * adoptDocumentVersion 向后端 API 发送写操作。
+ */
 export function adoptDocumentVersion(
   projectId: string,
   missionId: string,
@@ -276,6 +288,9 @@ export function adoptDocumentVersion(
   );
 }
 
+/**
+ * claimTask 向后端 API 发送写操作。
+ */
 export function claimTask(projectId: string, missionId: string, taskId: string) {
   return send<{ id: string; status: string }>(
     `/api/projects/${projectId}/missions/${missionId}/tasks/${taskId}/claim`,
@@ -287,6 +302,9 @@ export function claimTask(projectId: string, missionId: string, taskId: string) 
   );
 }
 
+/**
+ * sendTaskToAdmin 向后端 API 发送写操作。
+ */
 export function sendTaskToAdmin(projectId: string, missionId: string, taskId: string) {
   return send<{ id: string; status: string }>(
     `/api/projects/${projectId}/missions/${missionId}/tasks/${taskId}/handoffs`,
@@ -299,6 +317,9 @@ export function sendTaskToAdmin(projectId: string, missionId: string, taskId: st
   );
 }
 
+/**
+ * requestReviewCheckpoint 向后端 API 发送写操作。
+ */
 export function requestReviewCheckpoint(projectId: string, missionId: string, taskId: string) {
   return send<{ id: string }>(
     `/api/projects/${projectId}/missions/${missionId}/tasks/${taskId}/review-checkpoints`,
@@ -312,6 +333,9 @@ export function requestReviewCheckpoint(projectId: string, missionId: string, ta
   );
 }
 
+/**
+ * createArchive 向后端 API 发送写操作。
+ */
 export function createArchive(projectId: string, missionId: string) {
   return send<MissionArchiveResult>(`/api/projects/${projectId}/missions/${missionId}/archive`, "POST");
 }

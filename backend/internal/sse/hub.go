@@ -12,12 +12,14 @@ type Hub struct {
 	subscribers map[string][]chan Event
 }
 
+// NewHub 创建并返回对应的组件。
 func NewHub() *Hub {
 	return &Hub{
 		subscribers: make(map[string][]chan Event),
 	}
 }
 
+// Subscribe 订阅请求的事件流。
 func (h *Hub) Subscribe(channel string) <-chan Event {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -27,6 +29,7 @@ func (h *Hub) Subscribe(channel string) <-chan Event {
 	return ch
 }
 
+// Publish 将当前事件或负载发布到目标位置。
 func (h *Hub) Publish(event Event) {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
@@ -39,6 +42,7 @@ func (h *Hub) Publish(event Event) {
 	}
 }
 
+// PublishToChannel 将当前事件或负载发布到目标位置。
 func (h *Hub) PublishToChannel(channel string, data []byte) {
 	h.Publish(Event{
 		Channel: channel,

@@ -11,6 +11,7 @@ type fakeWriter struct {
 	bytesKeys  []string
 }
 
+// BuildArchiveData builds the requested artifact from the available inputs.
 func (f fakeStore) BuildArchiveData(context.Context, string) (ArchiveData, error) {
 	return ArchiveData{
 		AdoptedDocumentVersionIDs: []string{"docv_1"},
@@ -19,6 +20,7 @@ func (f fakeStore) BuildArchiveData(context.Context, string) (ArchiveData, error
 	}, nil
 }
 
+// CreateArchiveRecord 创建请求的资源或记录。
 func (f fakeStore) CreateArchiveRecord(_ context.Context, missionID string, manifest ArchiveManifest) (MissionArchive, error) {
 	return MissionArchive{
 		ID:        "archive_1",
@@ -28,20 +30,24 @@ func (f fakeStore) CreateArchiveRecord(_ context.Context, missionID string, mani
 	}, nil
 }
 
+// GetArchiveByMission 返回请求的资源或值。
 func (f fakeStore) GetArchiveByMission(context.Context, string) (MissionArchive, error) {
 	return MissionArchive{ID: "archive_1", MissionID: "mission_1", Status: "uploaded"}, nil
 }
 
+// PutJSON 实现当前函数行为。
 func (f *fakeWriter) PutJSON(_ context.Context, objectKey string, _ any) error {
 	f.objectKeys = append(f.objectKeys, objectKey)
 	return nil
 }
 
+// PutBytes 实现当前函数行为。
 func (f *fakeWriter) PutBytes(_ context.Context, objectKey string, _ []byte, _ string) error {
 	f.bytesKeys = append(f.bytesKeys, objectKey)
 	return nil
 }
 
+// TestBuildArchiveManifestIncludesRuntimeSummary 验证该路径的预期行为。
 func TestBuildArchiveManifestIncludesRuntimeSummary(t *testing.T) {
 	svc := NewService(fakeStore{})
 	manifest, err := svc.BuildManifest(context.Background(), "mission_1")
@@ -56,6 +62,7 @@ func TestBuildArchiveManifestIncludesRuntimeSummary(t *testing.T) {
 	}
 }
 
+// TestCreateArchiveWritesManifestObject 验证该路径的预期行为。
 func TestCreateArchiveWritesManifestObject(t *testing.T) {
 	writer := &fakeWriter{}
 	svc := NewService(fakeStore{}, writer)

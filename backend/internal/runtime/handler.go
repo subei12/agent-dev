@@ -14,6 +14,7 @@ type Handler struct {
 	authorizer authz.Authorizer
 }
 
+// NewHandler 创建并返回对应的组件。
 func NewHandler(service Service, authorizer ...authz.Authorizer) *Handler {
 	var selected authz.Authorizer
 	if len(authorizer) > 0 {
@@ -22,6 +23,7 @@ func NewHandler(service Service, authorizer ...authz.Authorizer) *Handler {
 	return &Handler{service: service, authorizer: selected}
 }
 
+// RegisterRoutes 实现当前函数行为。
 func (h *Handler) RegisterRoutes(r chi.Router) {
 	r.Get("/api/projects/{projectId}/missions/{missionId}/agent-runtimes", h.listMissionRuntimes)
 	r.Get("/api/projects/{projectId}/executor-sessions/{sessionId}", h.getSession)
@@ -31,6 +33,7 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 	r.Get("/api/projects/{projectId}/executor-sessions/{sessionId}/access-audits", h.listAccessAudits)
 }
 
+// listMissionRuntimes 实现当前函数行为。
 func (h *Handler) listMissionRuntimes(w http.ResponseWriter, r *http.Request) {
 	items, err := h.service.ListMissionRuntimes(r.Context(), chi.URLParam(r, "missionId"))
 	if err != nil {
@@ -40,6 +43,7 @@ func (h *Handler) listMissionRuntimes(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, items)
 }
 
+// getSession 实现当前函数行为。
 func (h *Handler) getSession(w http.ResponseWriter, r *http.Request) {
 	session, err := h.service.GetSession(r.Context(), chi.URLParam(r, "sessionId"))
 	if err != nil {
@@ -49,6 +53,7 @@ func (h *Handler) getSession(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, session)
 }
 
+// listEvents 实现当前函数行为。
 func (h *Handler) listEvents(w http.ResponseWriter, r *http.Request) {
 	events, err := h.service.ListSessionEvents(r.Context(), chi.URLParam(r, "sessionId"))
 	if err != nil {
@@ -58,6 +63,7 @@ func (h *Handler) listEvents(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, events)
 }
 
+// getTranscript 实现当前函数行为。
 func (h *Handler) getTranscript(w http.ResponseWriter, r *http.Request) {
 	view := r.URL.Query().Get("view")
 	if view == "" {
@@ -81,6 +87,7 @@ func (h *Handler) getTranscript(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, transcript)
 }
 
+// listAccessAudits 实现当前函数行为。
 func (h *Handler) listAccessAudits(w http.ResponseWriter, r *http.Request) {
 	items, err := h.service.ListAccessAudits(r.Context(), chi.URLParam(r, "sessionId"))
 	if err != nil {
@@ -90,6 +97,7 @@ func (h *Handler) listAccessAudits(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, items)
 }
 
+// exportTranscript 实现当前函数行为。
 func (h *Handler) exportTranscript(w http.ResponseWriter, r *http.Request) {
 	actorUserID := r.Header.Get("X-Actor-Id")
 	if actorUserID == "" {
@@ -113,6 +121,7 @@ func (h *Handler) exportTranscript(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(view)
 }
 
+// writeJSON 实现当前函数行为。
 func writeJSON(w http.ResponseWriter, status int, value any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)

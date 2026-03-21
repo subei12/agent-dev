@@ -17,6 +17,7 @@ type WorkerApp struct {
 	scheduler *worker.Scheduler
 }
 
+// NewWorker 创建并返回对应的组件。
 func NewWorker(cfg platformconfig.Config) (*WorkerApp, error) {
 	pool, err := platformdb.NewPool(context.Background(), cfg.DatabaseURL)
 	if err != nil {
@@ -43,6 +44,7 @@ func NewWorker(cfg platformconfig.Config) (*WorkerApp, error) {
 	}, nil
 }
 
+// Run 执行当前组件的主循环或工作流。
 func (w *WorkerApp) Run(ctx context.Context) error {
 	return w.scheduler.Run(ctx, 5*time.Second)
 }

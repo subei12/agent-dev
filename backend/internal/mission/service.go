@@ -12,10 +12,12 @@ type service struct {
 	repo *Repository
 }
 
+// NewService 创建并返回对应的组件。
 func NewService(repo *Repository) Service {
 	return &service{repo: repo}
 }
 
+// CreateMission 创建请求的资源或记录。
 func (s *service) CreateMission(ctx context.Context, cmd CreateMissionCmd) (Mission, error) {
 	if cmd.SourceType == "" {
 		cmd.SourceType = "project_task"
@@ -26,10 +28,12 @@ func (s *service) CreateMission(ctx context.Context, cmd CreateMissionCmd) (Miss
 	return s.repo.CreateMission(ctx, cmd)
 }
 
+// GetMission 返回请求的资源或值。
 func (s *service) GetMission(ctx context.Context, projectID, missionID string) (Mission, error) {
 	return s.repo.GetMission(ctx, projectID, missionID)
 }
 
+// Decide 实现当前函数行为。
 func (s *service) Decide(ctx context.Context, cmd DecideMissionCmd) (MissionDecision, error) {
 	decision, err := s.repo.CreateDecision(ctx, cmd)
 	if err != nil {
@@ -45,6 +49,7 @@ func (s *service) Decide(ctx context.Context, cmd DecideMissionCmd) (MissionDeci
 	return decision, nil
 }
 
+// statusFromDecision 实现当前函数行为。
 func statusFromDecision(decision string) string {
 	switch decision {
 	case "approve_plan":

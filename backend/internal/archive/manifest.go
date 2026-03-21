@@ -31,6 +31,7 @@ type ArchiveBundle struct {
 	RuntimeEventSummaryKeys   []string `json:"runtimeEventSummaryKeys"`
 }
 
+// BuildManifest builds the requested artifact from the available inputs.
 func BuildManifest(missionID string, data ArchiveData) ArchiveManifest {
 	now := time.Now().UTC().Format(time.RFC3339)
 	objectKeys := append([]string{}, data.RuntimeEventSummaryKeys...)
@@ -51,6 +52,7 @@ func BuildManifest(missionID string, data ArchiveData) ArchiveManifest {
 	}
 }
 
+// BuildBundle builds the requested artifact from the available inputs.
 func BuildBundle(missionID string, data ArchiveData) ArchiveBundle {
 	return ArchiveBundle{
 		MissionID:                 missionID,

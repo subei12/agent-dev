@@ -30,10 +30,12 @@ type service struct {
 	store Store
 }
 
+// NewService 创建并返回对应的组件。
 func NewService(store Store) Service {
 	return &service{store: store}
 }
 
+// CreateBoard 创建请求的资源或记录。
 func (s *service) CreateBoard(ctx context.Context, cmd CreateBoardCmd) (TaskBoard, error) {
 	board, err := s.store.CreateBoard(ctx, cmd.MissionID, cmd.Title)
 	if err != nil {
@@ -51,6 +53,7 @@ func (s *service) CreateBoard(ctx context.Context, cmd CreateBoardCmd) (TaskBoar
 	return board, nil
 }
 
+// GetBoard 返回请求的资源或值。
 func (s *service) GetBoard(ctx context.Context, missionID string) (TaskBoard, error) {
 	board, err := s.store.GetBoard(ctx, missionID)
 	if err != nil {
@@ -65,6 +68,7 @@ func (s *service) GetBoard(ctx context.Context, missionID string) (TaskBoard, er
 	return board, nil
 }
 
+// Claim 实现当前函数行为。
 func (s *service) Claim(ctx context.Context, cmd ClaimTaskCmd) (TaskClaim, error) {
 	if _, err := s.store.UpdateTaskStatus(ctx, cmd.TaskItemID, "claimed"); err != nil {
 		return TaskClaim{}, err
@@ -72,6 +76,7 @@ func (s *service) Claim(ctx context.Context, cmd ClaimTaskCmd) (TaskClaim, error
 	return s.store.CreateClaim(ctx, cmd)
 }
 
+// CreateHandoff 创建请求的资源或记录。
 func (s *service) CreateHandoff(ctx context.Context, cmd CreateHandoffCmd) (TaskHandoff, error) {
 	taskItem, err := s.store.GetTaskItem(ctx, cmd.TaskItemID)
 	if err != nil {
@@ -93,10 +98,12 @@ func (s *service) CreateHandoff(ctx context.Context, cmd CreateHandoffCmd) (Task
 	return handoff, nil
 }
 
+// RequestCheckpoint 实现当前函数行为。
 func (s *service) RequestCheckpoint(ctx context.Context, cmd RequestCheckpointCmd) (ReviewCheckpoint, error) {
 	return s.store.CreateCheckpoint(ctx, cmd)
 }
 
+// hasJSONItems 实现当前函数行为。
 func hasJSONItems(raw json.RawMessage) bool {
 	if len(raw) == 0 {
 		return false

@@ -11,6 +11,9 @@ type DocumentListProps = {
   isSubmitting: boolean;
 };
 
+/**
+ * DocumentList 渲染或处理当前前端行为。
+ */
 export function DocumentList({
   documents,
   versionsByDocument,

@@ -14,18 +14,22 @@ type fakeService struct {
 	createMission func(context.Context, CreateMissionCmd) (Mission, error)
 }
 
+// CreateMission 创建请求的资源或记录。
 func (f fakeService) CreateMission(ctx context.Context, cmd CreateMissionCmd) (Mission, error) {
 	return f.createMission(ctx, cmd)
 }
 
+// GetMission 返回请求的资源或值。
 func (f fakeService) GetMission(context.Context, string, string) (Mission, error) {
 	return Mission{}, nil
 }
 
+// Decide 实现当前函数行为。
 func (f fakeService) Decide(context.Context, DecideMissionCmd) (MissionDecision, error) {
 	return MissionDecision{}, nil
 }
 
+// TestCreateMission 验证该路径的预期行为。
 func TestCreateMission(t *testing.T) {
 	svc := fakeService{
 		createMission: func(_ context.Context, cmd CreateMissionCmd) (Mission, error) {

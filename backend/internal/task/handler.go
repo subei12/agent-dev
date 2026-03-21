@@ -14,6 +14,7 @@ type Handler struct {
 	authorizer authz.Authorizer
 }
 
+// NewHandler 创建并返回对应的组件。
 func NewHandler(service Service, authorizer ...authz.Authorizer) *Handler {
 	var selected authz.Authorizer
 	if len(authorizer) > 0 {
@@ -22,6 +23,7 @@ func NewHandler(service Service, authorizer ...authz.Authorizer) *Handler {
 	return &Handler{service: service, authorizer: selected}
 }
 
+// RegisterRoutes 实现当前函数行为。
 func (h *Handler) RegisterRoutes(r chi.Router) {
 	r.Get("/api/projects/{projectId}/missions/{missionId}/task-board", h.getBoard)
 	r.Post("/api/projects/{projectId}/missions/{missionId}/task-board", h.createBoard)
@@ -62,6 +64,7 @@ type createCheckpointRequest struct {
 	LinkedRepoCandidateIDs   json.RawMessage `json:"linkedRepoCandidateIds"`
 }
 
+// getBoard 实现当前函数行为。
 func (h *Handler) getBoard(w http.ResponseWriter, r *http.Request) {
 	board, err := h.service.GetBoard(r.Context(), chi.URLParam(r, "missionId"))
 	if err != nil {
@@ -71,6 +74,7 @@ func (h *Handler) getBoard(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, board)
 }
 
+// createBoard 实现当前函数行为。
 func (h *Handler) createBoard(w http.ResponseWriter, r *http.Request) {
 	if err := h.require(r); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
@@ -93,6 +97,7 @@ func (h *Handler) createBoard(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, board)
 }
 
+// claimTask 实现当前函数行为。
 func (h *Handler) claimTask(w http.ResponseWriter, r *http.Request) {
 	if err := h.require(r); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
@@ -115,6 +120,7 @@ func (h *Handler) claimTask(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, claim)
 }
 
+// createHandoff 实现当前函数行为。
 func (h *Handler) createHandoff(w http.ResponseWriter, r *http.Request) {
 	if err := h.require(r); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
@@ -145,6 +151,7 @@ func (h *Handler) createHandoff(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, handoff)
 }
 
+// createCheckpoint 实现当前函数行为。
 func (h *Handler) createCheckpoint(w http.ResponseWriter, r *http.Request) {
 	if err := h.require(r); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
@@ -172,12 +179,14 @@ func (h *Handler) createCheckpoint(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, checkpoint)
 }
 
+// writeJSON 实现当前函数行为。
 func writeJSON(w http.ResponseWriter, status int, value any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(value)
 }
 
+// require 实现当前函数行为。
 func (h *Handler) require(r *http.Request) error {
 	if h.authorizer == nil {
 		return nil
