@@ -412,13 +412,17 @@ type TaskBoard struct {
 }
 
 type TaskClaim struct {
-	ID          string             `json:"id"`
-	TaskItemID  string             `json:"task_item_id"`
-	AgentID     string             `json:"agent_id"`
-	Status      string             `json:"status"`
-	ClaimReason pgtype.Text        `json:"claim_reason"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	EndedAt     pgtype.Timestamptz `json:"ended_at"`
+	ID                 string             `json:"id"`
+	TaskItemID         string             `json:"task_item_id"`
+	AgentID            string             `json:"agent_id"`
+	Status             string             `json:"status"`
+	ClaimReason        pgtype.Text        `json:"claim_reason"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
+	EndedAt            pgtype.Timestamptz `json:"ended_at"`
+	ExecutionLockToken pgtype.Text        `json:"execution_lock_token"`
+	AttemptCount       int32              `json:"attempt_count"`
+	LastError          pgtype.Text        `json:"last_error"`
+	LastHeartbeatAt    pgtype.Timestamptz `json:"last_heartbeat_at"`
 }
 
 type TaskHandoff struct {

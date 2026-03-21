@@ -11,18 +11,73 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const acquireTaskClaimExecution = `-- name: AcquireTaskClaimExecution :one
+update task_claims
+set
+  execution_lock_token = $2,
+  attempt_count = attempt_count + 1,
+  last_heartbeat_at = now()
+where id = $1
+  and status = 'active'
+  and ended_at is null
+  and execution_lock_token is null
+returning id, task_item_id, agent_id, status, claim_reason, created_at, ended_at
+`
+
+type AcquireTaskClaimExecutionParams struct {
+	ID                 string      `json:"id"`
+	ExecutionLockToken pgtype.Text `json:"execution_lock_token"`
+}
+
+type AcquireTaskClaimExecutionRow struct {
+	ID          string             `json:"id"`
+	TaskItemID  string             `json:"task_item_id"`
+	AgentID     string             `json:"agent_id"`
+	Status      string             `json:"status"`
+	ClaimReason pgtype.Text        `json:"claim_reason"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	EndedAt     pgtype.Timestamptz `json:"ended_at"`
+}
+
+func (q *Queries) AcquireTaskClaimExecution(ctx context.Context, arg AcquireTaskClaimExecutionParams) (AcquireTaskClaimExecutionRow, error) {
+	row := q.db.QueryRow(ctx, acquireTaskClaimExecution, arg.ID, arg.ExecutionLockToken)
+	var i AcquireTaskClaimExecutionRow
+	err := row.Scan(
+		&i.ID,
+		&i.TaskItemID,
+		&i.AgentID,
+		&i.Status,
+		&i.ClaimReason,
+		&i.CreatedAt,
+		&i.EndedAt,
+	)
+	return i, err
+}
+
 const completeTaskClaim = `-- name: CompleteTaskClaim :one
 update task_claims
 set
   status = 'completed',
+  execution_lock_token = null,
+  last_error = null,
   ended_at = now()
 where id = $1
 returning id, task_item_id, agent_id, status, claim_reason, created_at, ended_at
 `
 
-func (q *Queries) CompleteTaskClaim(ctx context.Context, id string) (TaskClaim, error) {
+type CompleteTaskClaimRow struct {
+	ID          string             `json:"id"`
+	TaskItemID  string             `json:"task_item_id"`
+	AgentID     string             `json:"agent_id"`
+	Status      string             `json:"status"`
+	ClaimReason pgtype.Text        `json:"claim_reason"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	EndedAt     pgtype.Timestamptz `json:"ended_at"`
+}
+
+func (q *Queries) CompleteTaskClaim(ctx context.Context, id string) (CompleteTaskClaimRow, error) {
 	row := q.db.QueryRow(ctx, completeTaskClaim, id)
-	var i TaskClaim
+	var i CompleteTaskClaimRow
 	err := row.Scan(
 		&i.ID,
 		&i.TaskItemID,
@@ -148,7 +203,17 @@ type CreateTaskClaimParams struct {
 	ClaimReason pgtype.Text `json:"claim_reason"`
 }
 
-func (q *Queries) CreateTaskClaim(ctx context.Context, arg CreateTaskClaimParams) (TaskClaim, error) {
+type CreateTaskClaimRow struct {
+	ID          string             `json:"id"`
+	TaskItemID  string             `json:"task_item_id"`
+	AgentID     string             `json:"agent_id"`
+	Status      string             `json:"status"`
+	ClaimReason pgtype.Text        `json:"claim_reason"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	EndedAt     pgtype.Timestamptz `json:"ended_at"`
+}
+
+func (q *Queries) CreateTaskClaim(ctx context.Context, arg CreateTaskClaimParams) (CreateTaskClaimRow, error) {
 	row := q.db.QueryRow(ctx, createTaskClaim,
 		arg.ID,
 		arg.TaskItemID,
@@ -156,7 +221,7 @@ func (q *Queries) CreateTaskClaim(ctx context.Context, arg CreateTaskClaimParams
 		arg.Status,
 		arg.ClaimReason,
 	)
-	var i TaskClaim
+	var i CreateTaskClaimRow
 	err := row.Scan(
 		&i.ID,
 		&i.TaskItemID,
@@ -309,6 +374,49 @@ func (q *Queries) CreateTaskItem(ctx context.Context, arg CreateTaskItemParams) 
 	return i, err
 }
 
+const failTaskClaimExecution = `-- name: FailTaskClaimExecution :one
+update task_claims
+set
+  status = case when attempt_count >= $2 then 'failed' else 'active' end,
+  execution_lock_token = null,
+  last_error = $3,
+  last_heartbeat_at = now(),
+  ended_at = case when attempt_count >= $2 then now() else null end
+where id = $1
+returning id, task_item_id, agent_id, status, claim_reason, created_at, ended_at
+`
+
+type FailTaskClaimExecutionParams struct {
+	ID          string      `json:"id"`
+	MaxAttempts int32       `json:"max_attempts"`
+	LastError   pgtype.Text `json:"last_error"`
+}
+
+type FailTaskClaimExecutionRow struct {
+	ID          string             `json:"id"`
+	TaskItemID  string             `json:"task_item_id"`
+	AgentID     string             `json:"agent_id"`
+	Status      string             `json:"status"`
+	ClaimReason pgtype.Text        `json:"claim_reason"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	EndedAt     pgtype.Timestamptz `json:"ended_at"`
+}
+
+func (q *Queries) FailTaskClaimExecution(ctx context.Context, arg FailTaskClaimExecutionParams) (FailTaskClaimExecutionRow, error) {
+	row := q.db.QueryRow(ctx, failTaskClaimExecution, arg.ID, arg.MaxAttempts, arg.LastError)
+	var i FailTaskClaimExecutionRow
+	err := row.Scan(
+		&i.ID,
+		&i.TaskItemID,
+		&i.AgentID,
+		&i.Status,
+		&i.ClaimReason,
+		&i.CreatedAt,
+		&i.EndedAt,
+	)
+	return i, err
+}
+
 const getLatestTaskBoardByMission = `-- name: GetLatestTaskBoardByMission :one
 select id, mission_id, title, created_at, updated_at
 from task_boards
@@ -424,6 +532,40 @@ func (q *Queries) ListTaskItemsByBoard(ctx context.Context, boardID string) ([]T
 		return nil, err
 	}
 	return items, nil
+}
+
+const releaseTaskClaimExecution = `-- name: ReleaseTaskClaimExecution :one
+update task_claims
+set
+  execution_lock_token = null,
+  last_heartbeat_at = now()
+where id = $1
+returning id, task_item_id, agent_id, status, claim_reason, created_at, ended_at
+`
+
+type ReleaseTaskClaimExecutionRow struct {
+	ID          string             `json:"id"`
+	TaskItemID  string             `json:"task_item_id"`
+	AgentID     string             `json:"agent_id"`
+	Status      string             `json:"status"`
+	ClaimReason pgtype.Text        `json:"claim_reason"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	EndedAt     pgtype.Timestamptz `json:"ended_at"`
+}
+
+func (q *Queries) ReleaseTaskClaimExecution(ctx context.Context, id string) (ReleaseTaskClaimExecutionRow, error) {
+	row := q.db.QueryRow(ctx, releaseTaskClaimExecution, id)
+	var i ReleaseTaskClaimExecutionRow
+	err := row.Scan(
+		&i.ID,
+		&i.TaskItemID,
+		&i.AgentID,
+		&i.Status,
+		&i.ClaimReason,
+		&i.CreatedAt,
+		&i.EndedAt,
+	)
+	return i, err
 }
 
 const updateTaskItemStatus = `-- name: UpdateTaskItemStatus :one
