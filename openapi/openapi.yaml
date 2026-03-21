@@ -119,3 +119,33 @@ paths:
       responses:
         "201":
           description: Review checkpoint created
+  /api/projects/{projectId}/missions/{missionId}/agent-runtimes:
+    get:
+      summary: List mission agent runtimes
+      responses:
+        "200":
+          description: Agent runtimes
+  /api/projects/{projectId}/executor-sessions/{sessionId}:
+    get:
+      summary: Get executor session
+      responses:
+        "200":
+          description: Executor session
+  /api/projects/{projectId}/executor-sessions/{sessionId}/events:
+    get:
+      summary: List executor session events
+      responses:
+        "200":
+          description: Runtime events
+  /api/projects/{projectId}/executor-sessions/{sessionId}/transcript:
+    get:
+      summary: Get executor transcript
+      responses:
+        "200":
+          description: Transcript view
+  /api/projects/{projectId}/executor-sessions/{sessionId}/access-audits:
+    get:
+      summary: List transcript access audits
+      responses:
+        "200":
+          description: Access audit list

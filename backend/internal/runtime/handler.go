@@ -1,0 +1,83 @@
+package runtime
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/go-chi/chi/v5"
+)
+
+type Handler struct {
+	service Service
+}
+
+func NewHandler(service Service) *Handler {
+	return &Handler{service: service}
+}
+
+func (h *Handler) RegisterRoutes(r chi.Router) {
+	r.Get("/api/projects/{projectId}/missions/{missionId}/agent-runtimes", h.listMissionRuntimes)
+	r.Get("/api/projects/{projectId}/executor-sessions/{sessionId}", h.getSession)
+	r.Get("/api/projects/{projectId}/executor-sessions/{sessionId}/events", h.listEvents)
+	r.Get("/api/projects/{projectId}/executor-sessions/{sessionId}/transcript", h.getTranscript)
+	r.Get("/api/projects/{projectId}/executor-sessions/{sessionId}/access-audits", h.listAccessAudits)
+}
+
+func (h *Handler) listMissionRuntimes(w http.ResponseWriter, r *http.Request) {
+	items, err := h.service.ListMissionRuntimes(r.Context(), chi.URLParam(r, "missionId"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, items)
+}
+
+func (h *Handler) getSession(w http.ResponseWriter, r *http.Request) {
+	session, err := h.service.GetSession(r.Context(), chi.URLParam(r, "sessionId"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, session)
+}
+
+func (h *Handler) listEvents(w http.ResponseWriter, r *http.Request) {
+	events, err := h.service.ListSessionEvents(r.Context(), chi.URLParam(r, "sessionId"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, events)
+}
+
+func (h *Handler) getTranscript(w http.ResponseWriter, r *http.Request) {
+	view := r.URL.Query().Get("view")
+	if view == "" {
+		view = "summary"
+	}
+	actorUserID := r.Header.Get("X-Actor-Id")
+	if actorUserID == "" {
+		actorUserID = "anonymous"
+	}
+	transcript, err := h.service.GetTranscriptView(r.Context(), chi.URLParam(r, "sessionId"), actorUserID, view)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, transcript)
+}
+
+func (h *Handler) listAccessAudits(w http.ResponseWriter, r *http.Request) {
+	items, err := h.service.ListAccessAudits(r.Context(), chi.URLParam(r, "sessionId"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, items)
+}
+
+func writeJSON(w http.ResponseWriter, status int, value any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(value)
+}

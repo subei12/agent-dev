@@ -33,6 +33,33 @@ type AgentAdminPolicy struct {
 	UpdatedAt                               pgtype.Timestamptz `json:"updated_at"`
 }
 
+type AgentPresence struct {
+	AgentID                  string             `json:"agent_id"`
+	Availability             string             `json:"availability"`
+	CurrentMissionID         pgtype.Text        `json:"current_mission_id"`
+	CurrentTaskItemID        pgtype.Text        `json:"current_task_item_id"`
+	CurrentExecutorSessionID pgtype.Text        `json:"current_executor_session_id"`
+	LastHeartbeatAt          pgtype.Timestamptz `json:"last_heartbeat_at"`
+	UpdatedAt                pgtype.Timestamptz `json:"updated_at"`
+}
+
+type AgentRuntimeEvent struct {
+	ID                string             `json:"id"`
+	MissionID         string             `json:"mission_id"`
+	AgentID           string             `json:"agent_id"`
+	ExecutorSessionID string             `json:"executor_session_id"`
+	RunID             pgtype.Text        `json:"run_id"`
+	NodeRunID         pgtype.Text        `json:"node_run_id"`
+	TaskItemID        pgtype.Text        `json:"task_item_id"`
+	Level             string             `json:"level"`
+	Category          string             `json:"category"`
+	Type              string             `json:"type"`
+	Title             string             `json:"title"`
+	Summary           pgtype.Text        `json:"summary"`
+	PayloadJson       []byte             `json:"payload_json"`
+	OccurredAt        pgtype.Timestamptz `json:"occurred_at"`
+}
+
 type AgentTeam struct {
 	ID          string             `json:"id"`
 	ProjectID   string             `json:"project_id"`
@@ -93,6 +120,43 @@ type ExecutorProfile struct {
 	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
 }
 
+type ExecutorSession struct {
+	ID                string             `json:"id"`
+	MissionID         string             `json:"mission_id"`
+	TaskItemID        pgtype.Text        `json:"task_item_id"`
+	AgentID           string             `json:"agent_id"`
+	ExecutorProfileID string             `json:"executor_profile_id"`
+	Backend           string             `json:"backend"`
+	Status            string             `json:"status"`
+	StartedAt         pgtype.Timestamptz `json:"started_at"`
+	EndedAt           pgtype.Timestamptz `json:"ended_at"`
+}
+
+type ExecutorTranscript struct {
+	ID                    string             `json:"id"`
+	ExecutorSessionID     string             `json:"executor_session_id"`
+	MissionID             string             `json:"mission_id"`
+	AgentID               string             `json:"agent_id"`
+	StorageKind           string             `json:"storage_kind"`
+	RedactedObjectKey     pgtype.Text        `json:"redacted_object_key"`
+	RawEncryptedObjectKey pgtype.Text        `json:"raw_encrypted_object_key"`
+	Status                string             `json:"status"`
+	StartedAt             pgtype.Timestamptz `json:"started_at"`
+	EndedAt               pgtype.Timestamptz `json:"ended_at"`
+}
+
+type ExecutorTranscriptEntry struct {
+	ID           string             `json:"id"`
+	TranscriptID string             `json:"transcript_id"`
+	Seq          int32              `json:"seq"`
+	Role         string             `json:"role"`
+	EntryType    string             `json:"entry_type"`
+	RedactedText pgtype.Text        `json:"redacted_text"`
+	ContentJson  []byte             `json:"content_json"`
+	RawObjectKey pgtype.Text        `json:"raw_object_key"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
 type Mission struct {
 	ID            string             `json:"id"`
 	ProjectID     string             `json:"project_id"`
@@ -107,6 +171,20 @@ type Mission struct {
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
 	CompletedAt   pgtype.Timestamptz `json:"completed_at"`
+}
+
+type MissionAgentRuntime struct {
+	ID                       string             `json:"id"`
+	MissionID                string             `json:"mission_id"`
+	AgentID                  string             `json:"agent_id"`
+	Status                   string             `json:"status"`
+	CurrentTaskItemID        pgtype.Text        `json:"current_task_item_id"`
+	CurrentRunID             pgtype.Text        `json:"current_run_id"`
+	CurrentNodeRunID         pgtype.Text        `json:"current_node_run_id"`
+	CurrentExecutorSessionID pgtype.Text        `json:"current_executor_session_id"`
+	StatusSummary            pgtype.Text        `json:"status_summary"`
+	StartedAt                pgtype.Timestamptz `json:"started_at"`
+	UpdatedAt                pgtype.Timestamptz `json:"updated_at"`
 }
 
 type MissionDecision struct {
@@ -174,6 +252,19 @@ type Role struct {
 	PermissionsJson []byte             `json:"permissions_json"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
+type RuntimeObservabilityPolicy struct {
+	ID                      string             `json:"id"`
+	ProjectID               string             `json:"project_id"`
+	AllowTranscriptView     bool               `json:"allow_transcript_view"`
+	RedactSecretsByDefault  bool               `json:"redact_secrets_by_default"`
+	AllowTranscriptExport   bool               `json:"allow_transcript_export"`
+	RetainRuntimeEventsDays int32              `json:"retain_runtime_events_days"`
+	RetainTranscriptDays    int32              `json:"retain_transcript_days"`
+	ArchiveFullTranscript   bool               `json:"archive_full_transcript"`
+	CreatedAt               pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
 }
 
 type SharedDocument struct {
@@ -253,4 +344,13 @@ type TaskItem struct {
 	DefinitionOfDoneJson        []byte             `json:"definition_of_done_json"`
 	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type TranscriptAccessAudit struct {
+	ID           string             `json:"id"`
+	TranscriptID string             `json:"transcript_id"`
+	ActorUserID  string             `json:"actor_user_id"`
+	AccessMode   string             `json:"access_mode"`
+	Reason       pgtype.Text        `json:"reason"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 }

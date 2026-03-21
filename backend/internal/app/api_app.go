@@ -10,6 +10,7 @@ import (
 	"github.com/your-org/agent-platform/internal/document"
 	platformhttp "github.com/your-org/agent-platform/internal/http"
 	"github.com/your-org/agent-platform/internal/mission"
+	"github.com/your-org/agent-platform/internal/runtime"
 	"github.com/your-org/agent-platform/internal/task"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -45,11 +46,16 @@ func NewAPI(cfg platformconfig.Config) (*APIApp, error) {
 			task.NewRepository(pool),
 		),
 	)
+	runtimeHandler := runtime.NewHandler(
+		runtime.NewService(
+			runtime.NewRepository(pool),
+		),
+	)
 
 	return &APIApp{
 		server: &http.Server{
 			Addr:    cfg.Addr,
-			Handler: platformhttp.NewRouter(missionHandler, documentHandler, discussionHandler, taskHandler),
+			Handler: platformhttp.NewRouter(missionHandler, documentHandler, discussionHandler, taskHandler, runtimeHandler),
 		},
 		pool: pool,
 	}, nil
