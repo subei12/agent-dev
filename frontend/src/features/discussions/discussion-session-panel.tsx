@@ -1,12 +1,40 @@
+import { FormEvent, useState } from "react";
+
 import { DiscussionSession } from "../../lib/api";
 
-export function DiscussionSessionPanel({ sessions }: { sessions: DiscussionSession[] }) {
+type DiscussionSessionPanelProps = {
+  sessions: DiscussionSession[];
+  onCreateSession: (topic: string) => void;
+  isSubmitting: boolean;
+};
+
+export function DiscussionSessionPanel({ sessions, onCreateSession, isSubmitting }: DiscussionSessionPanelProps) {
+  const [topic, setTopic] = useState("");
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!topic.trim()) {
+      return;
+    }
+    onCreateSession(topic.trim());
+    setTopic("");
+  };
+
   return (
     <section className="panel">
       <div className="panel-header">
         <p className="panel-kicker">Discussion Rounds</p>
         <span className="badge">{sessions.length} sessions</span>
       </div>
+      <form className="inline-form" onSubmit={handleSubmit}>
+        <label className="field">
+          <span>Discussion topic</span>
+          <input value={topic} onChange={(event) => setTopic(event.target.value)} />
+        </label>
+        <button className="action-button" disabled={isSubmitting} type="submit">
+          Start Discussion
+        </button>
+      </form>
       <div className="stack">
         {sessions.length === 0 ? (
           <div className="empty-card">

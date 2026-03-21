@@ -68,6 +68,18 @@ export type TranscriptAccessAudit = {
   reason?: string;
 };
 
+export type MissionArchiveResult = {
+  archive: {
+    id: string;
+    missionId: string;
+    status: string;
+  };
+  manifest: {
+    missionId: string;
+    objectKeys: string[];
+  };
+};
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8080";
 
 async function request<T>(path: string): Promise<T> {
@@ -75,6 +87,22 @@ async function request<T>(path: string): Promise<T> {
   if (!response.ok) {
     throw new Error(`request failed: ${response.status}`);
   }
+  return response.json() as Promise<T>;
+}
+
+async function send<T>(path: string, method: string, body?: unknown): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    method,
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+
+  if (!response.ok) {
+    throw new Error(`request failed: ${response.status}`);
+  }
+
   return response.json() as Promise<T>;
 }
 
@@ -157,4 +185,58 @@ export async function getTranscriptAccessAudits(
   } catch {
     return [];
   }
+}
+
+export function createDiscussionSession(projectId: string, missionId: string, topic: string) {
+  return send<DiscussionSession>(`/api/projects/${projectId}/missions/${missionId}/discussions`, "POST", {
+    topic,
+    initiatedByAgentId: "agent_admin"
+  });
+}
+
+export function createDocument(projectId: string, missionId: string, title: string, kind: string) {
+  return send<DocumentItem>(`/api/projects/${projectId}/missions/${missionId}/documents`, "POST", {
+    title,
+    kind
+  });
+}
+
+export function claimTask(projectId: string, missionId: string, taskId: string) {
+  return send<{ id: string; status: string }>(
+    `/api/projects/${projectId}/missions/${missionId}/tasks/${taskId}/claim`,
+    "POST",
+    {
+      agentId: "agent_backend",
+      claimReason: "workspace claim"
+    }
+  );
+}
+
+export function sendTaskToAdmin(projectId: string, missionId: string, taskId: string) {
+  return send<{ id: string; status: string }>(
+    `/api/projects/${projectId}/missions/${missionId}/tasks/${taskId}/handoffs`,
+    "POST",
+    {
+      fromAgentId: "agent_backend",
+      toAdminAgent: true,
+      summary: "Task completed and awaiting admin review."
+    }
+  );
+}
+
+export function requestReviewCheckpoint(projectId: string, missionId: string, taskId: string) {
+  return send<{ id: string }>(
+    `/api/projects/${projectId}/missions/${missionId}/tasks/${taskId}/review-checkpoints`,
+    "POST",
+    {
+      kind: "doc_review",
+      requestedByAgentId: "agent_admin",
+      assignedAgentId: "agent_admin",
+      summary: "Checkpoint requested from mission workspace."
+    }
+  );
+}
+
+export function createArchive(projectId: string, missionId: string) {
+  return send<MissionArchiveResult>(`/api/projects/${projectId}/missions/${missionId}/archive`, "POST");
 }
