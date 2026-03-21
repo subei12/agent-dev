@@ -17,8 +17,17 @@ type fakePublisher struct {
 	channels []string
 }
 
+type fakeWriter struct {
+	objectKeys []string
+}
+
 func (f *fakePublisher) PublishToChannel(channel string, _ []byte) {
 	f.channels = append(f.channels, channel)
+}
+
+func (f *fakeWriter) PutJSON(_ context.Context, objectKey string, _ any) error {
+	f.objectKeys = append(f.objectKeys, objectKey)
+	return nil
 }
 
 func (f *fakeStore) CreateSession(_ context.Context, cmd StartSessionCmd) (ExecutorSession, error) {
@@ -45,6 +54,7 @@ func (f *fakeStore) CreateTranscript(_ context.Context, cmd CreateTranscriptCmd)
 		MissionID:         cmd.MissionID,
 		AgentID:           cmd.AgentID,
 		StorageKind:       cmd.StorageKind,
+		RedactedObjectKey: cmd.RedactedObjectKey,
 		Status:            cmd.Status,
 	}
 	f.transcripts[cmd.ExecutorSessionID] = transcript
@@ -129,8 +139,9 @@ func TestSessionLifecycle(t *testing.T) {
 		transcripts: map[string]Transcript{},
 	}
 	publisher := &fakePublisher{}
+	writer := &fakeWriter{}
 
-	svc := NewService(store, publisher)
+	svc := NewServiceWithDeps(store, publisher, writer)
 	session, err := svc.StartSession(context.Background(), StartSessionCmd{
 		MissionID:          "mission_1",
 		AgentID:            "agent_1",
@@ -169,5 +180,8 @@ func TestSessionLifecycle(t *testing.T) {
 
 	if len(publisher.channels) == 0 {
 		t.Fatal("expected runtime events to publish SSE notifications")
+	}
+	if len(writer.objectKeys) != 1 {
+		t.Fatalf("expected 1 transcript object write, got %d", len(writer.objectKeys))
 	}
 }

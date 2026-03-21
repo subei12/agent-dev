@@ -58,7 +58,7 @@ func TestCreateArchiveWritesManifestObject(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create archive: %v", err)
 	}
-	if len(writer.objectKeys) != 1 {
-		t.Fatalf("expected 1 written object key, got %d", len(writer.objectKeys))
+	if len(writer.objectKeys) != 2 {
+		t.Fatalf("expected 2 written object keys, got %d", len(writer.objectKeys))
 	}
 }

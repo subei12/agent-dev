@@ -20,10 +20,15 @@ type Service interface {
 type service struct {
 	store     Store
 	publisher EventPublisher
+	writer    ObjectWriter
 }
 
 type EventPublisher interface {
 	PublishToChannel(channel string, data []byte)
+}
+
+type ObjectWriter interface {
+	PutJSON(context.Context, string, any) error
 }
 
 func NewService(store Store, publisher ...EventPublisher) Service {
@@ -34,6 +39,14 @@ func NewService(store Store, publisher ...EventPublisher) Service {
 	return &service{
 		store:     store,
 		publisher: selected,
+	}
+}
+
+func NewServiceWithDeps(store Store, publisher EventPublisher, writer ObjectWriter) Service {
+	return &service{
+		store:     store,
+		publisher: publisher,
+		writer:    writer,
 	}
 }
 
@@ -73,6 +86,7 @@ func (s *service) StartSession(ctx context.Context, cmd StartSessionCmd) (Execut
 		MissionID:         cmd.MissionID,
 		AgentID:           cmd.AgentID,
 		StorageKind:       "db_text",
+		RedactedObjectKey: transcriptRedactedObjectKey(session.ID),
 		Status:            "capturing",
 	}); err != nil {
 		return ExecutorSession{}, err
@@ -117,6 +131,9 @@ func (s *service) SealSession(ctx context.Context, sessionID string) error {
 		return err
 	}
 	if _, err := s.store.UpdateTranscriptStatus(ctx, transcript.ID, "sealed"); err != nil {
+		return err
+	}
+	if err := s.persistRedactedTranscript(ctx, transcript, sessionID); err != nil {
 		return err
 	}
 	if err := s.store.UpsertPresence(ctx, UpsertPresenceCmd{
@@ -197,4 +214,25 @@ func (s *service) publish(missionID, sessionID, eventType string) {
 	if sessionID != "" {
 		s.publisher.PublishToChannel("session:"+sessionID, payload)
 	}
+}
+
+func (s *service) persistRedactedTranscript(ctx context.Context, transcript Transcript, sessionID string) error {
+	if s.writer == nil || transcript.RedactedObjectKey == "" {
+		return nil
+	}
+
+	entries, err := s.store.ListTranscriptEntries(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+
+	payload := map[string]any{
+		"transcript": transcript,
+		"entries":    entries,
+	}
+	return s.writer.PutJSON(ctx, transcript.RedactedObjectKey, payload)
+}
+
+func transcriptRedactedObjectKey(sessionID string) string {
+	return "transcripts/" + sessionID + "/redacted.json"
 }

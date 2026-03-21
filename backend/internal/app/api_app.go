@@ -56,9 +56,10 @@ func NewAPI(cfg platformconfig.Config) (*APIApp, error) {
 		),
 	)
 	runtimeHandler := runtime.NewHandler(
-		runtime.NewService(
+		runtime.NewServiceWithDeps(
 			runtime.NewRepository(pool),
 			hub,
+			objectStore,
 		),
 	)
 	sseHandler := sse.NewHandler(hub)

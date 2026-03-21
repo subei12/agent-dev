@@ -23,6 +23,14 @@ type ArchiveData struct {
 	RuntimeEventSummaryKeys   []string
 }
 
+type ArchiveBundle struct {
+	MissionID                 string   `json:"missionId"`
+	AdoptedDocumentVersionIDs []string `json:"adoptedDocumentVersionIds"`
+	IncludedApprovalIDs       []string `json:"includedApprovalIds"`
+	IncludedDecisionIDs       []string `json:"includedDecisionIds"`
+	RuntimeEventSummaryKeys   []string `json:"runtimeEventSummaryKeys"`
+}
+
 func BuildManifest(missionID string, data ArchiveData) ArchiveManifest {
 	now := time.Now().UTC().Format(time.RFC3339)
 	objectKeys := append([]string{}, data.RuntimeEventSummaryKeys...)
@@ -40,5 +48,15 @@ func BuildManifest(missionID string, data ArchiveData) ArchiveManifest {
 		IncludedDecisionIDs:       data.IncludedDecisionIDs,
 		ObjectKeys:                objectKeys,
 		ManifestHash:              hex.EncodeToString(sum[:]),
+	}
+}
+
+func BuildBundle(missionID string, data ArchiveData) ArchiveBundle {
+	return ArchiveBundle{
+		MissionID:                 missionID,
+		AdoptedDocumentVersionIDs: data.AdoptedDocumentVersionIDs,
+		IncludedApprovalIDs:       data.IncludedApprovalIDs,
+		IncludedDecisionIDs:       data.IncludedDecisionIDs,
+		RuntimeEventSummaryKeys:   data.RuntimeEventSummaryKeys,
 	}
 }

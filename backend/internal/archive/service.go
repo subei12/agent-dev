@@ -62,12 +62,16 @@ func (s *service) BuildManifest(ctx context.Context, missionID string) (ArchiveM
 }
 
 func (s *service) CreateArchive(ctx context.Context, missionID string) (MissionArchive, ArchiveManifest, error) {
-	manifest, err := s.BuildManifest(ctx, missionID)
+	data, err := s.store.BuildArchiveData(ctx, missionID)
 	if err != nil {
 		return MissionArchive{}, ArchiveManifest{}, err
 	}
+	manifest := BuildManifest(missionID, data)
 	if s.writer != nil {
 		if err := s.writer.PutJSON(ctx, archiveManifestObjectKey(missionID), manifest); err != nil {
+			return MissionArchive{}, ArchiveManifest{}, err
+		}
+		if err := s.writer.PutJSON(ctx, archiveBundleObjectKey(missionID), BuildBundle(missionID, data)); err != nil {
 			return MissionArchive{}, ArchiveManifest{}, err
 		}
 	}
@@ -161,6 +165,10 @@ func archiveFromRow(row sqlc.MissionArchive) MissionArchive {
 
 func archiveManifestObjectKey(missionID string) string {
 	return "archives/" + missionID + "/manifest.json"
+}
+
+func archiveBundleObjectKey(missionID string) string {
+	return "archives/" + missionID + "/bundle.json"
 }
 
 func textValue(value string) pgtype.Text {

@@ -8,6 +8,7 @@ import (
 	platformdb "github.com/your-org/agent-platform/internal/db"
 	"github.com/your-org/agent-platform/internal/executor"
 	"github.com/your-org/agent-platform/internal/runtime"
+	platformstorage "github.com/your-org/agent-platform/internal/storage"
 	"github.com/your-org/agent-platform/internal/worker"
 )
 
@@ -21,8 +22,12 @@ func NewWorker(cfg platformconfig.Config) (*WorkerApp, error) {
 	if err != nil {
 		return nil, err
 	}
+	objectStore, err := platformstorage.NewObjectStore(cfg.S3Endpoint, cfg.S3AccessKey, cfg.S3SecretKey, cfg.S3Bucket)
+	if err != nil {
+		return nil, err
+	}
 
-	runtimeService := runtime.NewService(runtime.NewRepository(pool))
+	runtimeService := runtime.NewServiceWithDeps(runtime.NewRepository(pool), nil, objectStore)
 	manager := executor.NewManager(
 		executor.NewBaseAdapter("codex_cli"),
 		runtimeService,
