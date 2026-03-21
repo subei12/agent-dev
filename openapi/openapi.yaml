@@ -149,3 +149,26 @@ paths:
       responses:
         "200":
           description: Access audit list
+  /api/projects/{projectId}/approvals/{approvalId}:
+    get:
+      summary: Get approval
+      responses:
+        "200":
+          description: Approval
+  /api/projects/{projectId}/repo-candidates/{candidateId}/publish:
+    post:
+      summary: Create repo candidate publish approval
+      responses:
+        "201":
+          description: Approval created
+  /api/projects/{projectId}/missions/{missionId}/archive:
+    post:
+      summary: Create mission archive
+      responses:
+        "201":
+          description: Mission archive created
+    get:
+      summary: Get mission archive
+      responses:
+        "200":
+          description: Mission archive

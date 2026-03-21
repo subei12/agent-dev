@@ -78,6 +78,35 @@ type AgentTeamMember struct {
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 }
 
+type Approval struct {
+	ID                 string             `json:"id"`
+	MissionID          pgtype.Text        `json:"mission_id"`
+	RunID              pgtype.Text        `json:"run_id"`
+	NodeRunID          pgtype.Text        `json:"node_run_id"`
+	Action             string             `json:"action"`
+	SubjectType        string             `json:"subject_type"`
+	SubjectID          string             `json:"subject_id"`
+	IntentSnapshotJson []byte             `json:"intent_snapshot_json"`
+	IntentHash         string             `json:"intent_hash"`
+	Status             string             `json:"status"`
+	Comment            pgtype.Text        `json:"comment"`
+	CreatedBy          string             `json:"created_by"`
+	DecidedBy          pgtype.Text        `json:"decided_by"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
+	DecidedAt          pgtype.Timestamptz `json:"decided_at"`
+}
+
+type ArtifactPublish struct {
+	ID                string             `json:"id"`
+	MissionID         pgtype.Text        `json:"mission_id"`
+	ArtifactVersionID string             `json:"artifact_version_id"`
+	ContentHash       string             `json:"content_hash"`
+	BaseCommitSha     pgtype.Text        `json:"base_commit_sha"`
+	IntentHash        string             `json:"intent_hash"`
+	Status            string             `json:"status"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
 type DiscussionRound struct {
 	ID                            string             `json:"id"`
 	SessionID                     string             `json:"session_id"`
@@ -187,6 +216,17 @@ type MissionAgentRuntime struct {
 	UpdatedAt                pgtype.Timestamptz `json:"updated_at"`
 }
 
+type MissionArchive struct {
+	ID                string             `json:"id"`
+	MissionID         string             `json:"mission_id"`
+	Status            string             `json:"status"`
+	ManifestObjectKey pgtype.Text        `json:"manifest_object_key"`
+	BundleObjectKey   pgtype.Text        `json:"bundle_object_key"`
+	Hash              pgtype.Text        `json:"hash"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	FinishedAt        pgtype.Timestamptz `json:"finished_at"`
+}
+
 type MissionDecision struct {
 	ID                            string             `json:"id"`
 	MissionID                     string             `json:"mission_id"`
@@ -237,6 +277,35 @@ type RepoBinding struct {
 	AuthMode      string             `json:"auth_mode"`
 	WriteEnabled  bool               `json:"write_enabled"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type RepoCandidate struct {
+	ID                        string             `json:"id"`
+	MissionID                 string             `json:"mission_id"`
+	TaskItemID                pgtype.Text        `json:"task_item_id"`
+	RepoBindingID             string             `json:"repo_binding_id"`
+	BaseCommitSha             string             `json:"base_commit_sha"`
+	ParentCandidateID         pgtype.Text        `json:"parent_candidate_id"`
+	CreatedFrom               string             `json:"created_from"`
+	CreatedFromRefID          string             `json:"created_from_ref_id"`
+	TreeHash                  string             `json:"tree_hash"`
+	PatchObjectKey            pgtype.Text        `json:"patch_object_key"`
+	WorkspaceArchiveObjectKey pgtype.Text        `json:"workspace_archive_object_key"`
+	Summary                   pgtype.Text        `json:"summary"`
+	Status                    string             `json:"status"`
+	ProducedByRunID           pgtype.Text        `json:"produced_by_run_id"`
+	ProducedByNodeRunID       pgtype.Text        `json:"produced_by_node_run_id"`
+	CreatedAt                 pgtype.Timestamptz `json:"created_at"`
+}
+
+type RepoCandidatePublish struct {
+	ID           string             `json:"id"`
+	CandidateID  string             `json:"candidate_id"`
+	IntentHash   string             `json:"intent_hash"`
+	Status       string             `json:"status"`
+	TargetBranch pgtype.Text        `json:"target_branch"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	FinishedAt   pgtype.Timestamptz `json:"finished_at"`
 }
 
 type RepoSnapshot struct {

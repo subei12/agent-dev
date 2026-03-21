@@ -6,6 +6,8 @@ import (
 
 	platformconfig "github.com/your-org/agent-platform/internal/config"
 	platformdb "github.com/your-org/agent-platform/internal/db"
+	"github.com/your-org/agent-platform/internal/approval"
+	"github.com/your-org/agent-platform/internal/archive"
 	"github.com/your-org/agent-platform/internal/discussion"
 	"github.com/your-org/agent-platform/internal/document"
 	platformhttp "github.com/your-org/agent-platform/internal/http"
@@ -51,11 +53,19 @@ func NewAPI(cfg platformconfig.Config) (*APIApp, error) {
 			runtime.NewRepository(pool),
 		),
 	)
+	approvalHandler := approval.NewHandler(
+		approval.NewService(pool),
+	)
+	archiveHandler := archive.NewHandler(
+		archive.NewService(
+			archive.NewRepository(pool),
+		),
+	)
 
 	return &APIApp{
 		server: &http.Server{
 			Addr:    cfg.Addr,
-			Handler: platformhttp.NewRouter(missionHandler, documentHandler, discussionHandler, taskHandler, runtimeHandler),
+			Handler: platformhttp.NewRouter(missionHandler, documentHandler, discussionHandler, taskHandler, runtimeHandler, approvalHandler, archiveHandler),
 		},
 		pool: pool,
 	}, nil
