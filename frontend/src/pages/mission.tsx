@@ -1,6 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { PageShell } from "../components/page-shell";
 import {
@@ -8,14 +8,18 @@ import {
   createArchive,
   createDiscussionSession,
   createDocument,
+  createDocumentVersion,
   getDiscussionSessions,
+  getDocumentVersions,
   getMission,
   getMissionDocuments,
   getMissionRuntimes,
   getTaskBoard,
+  adoptDocumentVersion,
   requestReviewCheckpoint,
   sendTaskToAdmin
 } from "../lib/api";
+import { subscribeToChannel } from "../lib/sse";
 import { DiscussionSessionPanel } from "../features/discussions/discussion-session-panel";
 import { DocumentList } from "../features/documents/document-list";
 import { MissionActionRail } from "../features/missions/mission-action-rail";
@@ -52,6 +56,12 @@ export function MissionPage() {
     queryKey: ["mission-task-board", missionId],
     queryFn: () => getTaskBoard(projectId, missionId)
   });
+  const versionQueries = useQueries({
+    queries: (documentsQuery.data ?? []).map((document) => ({
+      queryKey: ["document-versions", missionId, document.id],
+      queryFn: () => getDocumentVersions(projectId, missionId, document.id)
+    }))
+  });
 
   const discussionMutation = useMutation({
     mutationFn: (topic: string) => createDiscussionSession(projectId, missionId, topic),
@@ -63,6 +73,21 @@ export function MissionPage() {
   const documentMutation = useMutation({
     mutationFn: ({ title, kind }: { title: string; kind: string }) => createDocument(projectId, missionId, title, kind),
     onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["mission-documents", missionId] });
+    }
+  });
+  const versionMutation = useMutation({
+    mutationFn: ({ documentId, contentText }: { documentId: string; contentText: string }) =>
+      createDocumentVersion(projectId, missionId, documentId, contentText),
+    onSuccess: async (_, variables) => {
+      await queryClient.invalidateQueries({ queryKey: ["document-versions", missionId, variables.documentId] });
+    }
+  });
+  const adoptMutation = useMutation({
+    mutationFn: ({ documentId, versionId }: { documentId: string; versionId: string }) =>
+      adoptDocumentVersion(projectId, missionId, documentId, versionId),
+    onSuccess: async (_, variables) => {
+      await queryClient.invalidateQueries({ queryKey: ["document-versions", missionId, variables.documentId] });
       await queryClient.invalidateQueries({ queryKey: ["mission-documents", missionId] });
     }
   });
@@ -96,6 +121,16 @@ export function MissionPage() {
       setArchiveStatus(result.archive.status);
     }
   });
+  const versionsByDocument = Object.fromEntries(
+    (documentsQuery.data ?? []).map((document, index) => [document.id, versionQueries[index]?.data ?? []])
+  );
+
+  useEffect(() => {
+    return subscribeToChannel(projectId, `mission:${missionId}`, () => {
+      void queryClient.invalidateQueries({ queryKey: ["mission-runtimes", missionId] });
+      void queryClient.invalidateQueries({ queryKey: ["mission-task-board", missionId] });
+    });
+  }, [missionId, queryClient]);
 
   return (
     <PageShell
@@ -117,8 +152,11 @@ export function MissionPage() {
       />
       <DocumentList
         documents={documentsQuery.data ?? []}
-        isSubmitting={documentMutation.isPending}
+        isSubmitting={documentMutation.isPending || versionMutation.isPending || adoptMutation.isPending}
+        versionsByDocument={versionsByDocument}
         onCreateDocument={(title, kind) => documentMutation.mutate({ title, kind })}
+        onCreateVersion={(documentId, contentText) => versionMutation.mutate({ documentId, contentText })}
+        onAdoptVersion={(documentId, versionId) => adoptMutation.mutate({ documentId, versionId })}
       />
       <DiscussionSessionPanel
         sessions={sessionsQuery.data ?? []}

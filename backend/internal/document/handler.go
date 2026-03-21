@@ -19,6 +19,7 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 	r.Route("/api/projects/{projectId}/missions/{missionId}/documents", func(r chi.Router) {
 		r.Get("/", h.listDocuments)
 		r.Post("/", h.createDocument)
+		r.Get("/{documentId}/versions", h.listVersions)
 		r.Post("/{documentId}/versions", h.createVersion)
 		r.Post("/{documentId}/adopt", h.adoptVersion)
 	})
@@ -71,6 +72,15 @@ func (h *Handler) createDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusCreated, document)
+}
+
+func (h *Handler) listVersions(w http.ResponseWriter, r *http.Request) {
+	versions, err := h.service.ListVersions(r.Context(), chi.URLParam(r, "documentId"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, versions)
 }
 
 func (h *Handler) createVersion(w http.ResponseWriter, r *http.Request) {

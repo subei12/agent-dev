@@ -10,7 +10,10 @@ import (
 
 func main() {
 	cfg := platformconfig.MustLoad()
-	worker := app.NewWorker(cfg)
+	worker, err := app.NewWorker(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	if err := worker.Run(context.Background()); err != nil {
 		log.Fatal(err)

@@ -64,6 +64,21 @@ insert into task_claims (
 )
 returning id, task_item_id, agent_id, status, claim_reason, created_at, ended_at;
 
+-- name: ListActiveTaskClaimIDs :many
+select id
+from task_claims
+where status = 'active'
+  and ended_at is null
+order by created_at asc;
+
+-- name: CompleteTaskClaim :one
+update task_claims
+set
+  status = 'completed',
+  ended_at = now()
+where id = $1
+returning id, task_item_id, agent_id, status, claim_reason, created_at, ended_at;
+
 -- name: CreateTaskHandoff :one
 insert into task_handoffs (
   id,

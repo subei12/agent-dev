@@ -13,6 +13,8 @@ import (
 	platformhttp "github.com/your-org/agent-platform/internal/http"
 	"github.com/your-org/agent-platform/internal/mission"
 	"github.com/your-org/agent-platform/internal/runtime"
+	"github.com/your-org/agent-platform/internal/sse"
+	platformstorage "github.com/your-org/agent-platform/internal/storage"
 	"github.com/your-org/agent-platform/internal/task"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -24,6 +26,11 @@ type APIApp struct {
 
 func NewAPI(cfg platformconfig.Config) (*APIApp, error) {
 	pool, err := platformdb.NewPool(context.Background(), cfg.DatabaseURL)
+	if err != nil {
+		return nil, err
+	}
+	hub := sse.NewHub()
+	objectStore, err := platformstorage.NewObjectStore(cfg.S3Endpoint, cfg.S3AccessKey, cfg.S3SecretKey, cfg.S3Bucket)
 	if err != nil {
 		return nil, err
 	}
@@ -51,21 +58,24 @@ func NewAPI(cfg platformconfig.Config) (*APIApp, error) {
 	runtimeHandler := runtime.NewHandler(
 		runtime.NewService(
 			runtime.NewRepository(pool),
+			hub,
 		),
 	)
+	sseHandler := sse.NewHandler(hub)
 	approvalHandler := approval.NewHandler(
 		approval.NewService(pool),
 	)
 	archiveHandler := archive.NewHandler(
 		archive.NewService(
 			archive.NewRepository(pool),
+			objectStore,
 		),
 	)
 
 	return &APIApp{
 		server: &http.Server{
 			Addr:    cfg.Addr,
-			Handler: platformhttp.NewRouter(missionHandler, documentHandler, discussionHandler, taskHandler, runtimeHandler, approvalHandler, archiveHandler),
+			Handler: platformhttp.NewRouter(missionHandler, documentHandler, discussionHandler, taskHandler, runtimeHandler, approvalHandler, archiveHandler, sseHandler),
 		},
 		pool: pool,
 	}, nil

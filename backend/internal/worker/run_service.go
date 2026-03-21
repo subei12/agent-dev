@@ -16,6 +16,8 @@ type ClaimExecutionContext struct {
 	TaskItemID        string
 	AgentID           string
 	ExecutorProfileID string
+	Command           string
+	Args              []string
 }
 
 type Run struct {
@@ -42,6 +44,7 @@ type ExecutorTaskInput struct {
 
 type Store interface {
 	GetClaimExecutionContext(context.Context, string) (ClaimExecutionContext, error)
+	CompleteClaim(context.Context, string) error
 	CreateRun(context.Context, string, string) (Run, error)
 	CreateNodeRun(context.Context, string, string) (NodeRun, error)
 	UpdateRunStatus(context.Context, string, string) error
@@ -79,22 +82,29 @@ func (s *RunService) ExecuteClaimedTask(ctx context.Context, claimID string) err
 		TaskItemID:        execCtx.TaskItemID,
 		AgentID:           execCtx.AgentID,
 		ExecutorProfileID: execCtx.ExecutorProfileID,
-		Command:           "bash",
-		Args:              []string{"-lc", "printf 'worker run\n'"},
+		Command:           execCtx.Command,
+		Args:              execCtx.Args,
 	}); err != nil {
 		_ = s.store.UpdateRunStatus(ctx, run.ID, "failed")
 		return err
 	}
 
-	return s.store.UpdateRunStatus(ctx, run.ID, "succeeded")
+	if err := s.store.UpdateRunStatus(ctx, run.ID, "succeeded"); err != nil {
+		return err
+	}
+	return s.store.CompleteClaim(ctx, claimID)
 }
 
 type Repository struct {
+	pool    *pgxpool.Pool
 	queries *sqlc.Queries
 }
 
 func NewRepository(pool *pgxpool.Pool) *Repository {
-	return &Repository{queries: sqlc.New(pool)}
+	return &Repository{
+		pool:    pool,
+		queries: sqlc.New(pool),
+	}
 }
 
 func (r *Repository) GetClaimExecutionContext(ctx context.Context, claimID string) (ClaimExecutionContext, error) {
@@ -108,7 +118,18 @@ func (r *Repository) GetClaimExecutionContext(ctx context.Context, claimID strin
 		TaskItemID:        row.TaskItemID,
 		AgentID:           row.AgentID,
 		ExecutorProfileID: row.ExecutorProfileID,
+		Command:           row.Command,
+		Args:              jsonStringSlice(row.ArgsJson),
 	}, nil
+}
+
+func (r *Repository) ListActiveClaimIDs(ctx context.Context) ([]string, error) {
+	return r.queries.ListActiveTaskClaimIDs(ctx)
+}
+
+func (r *Repository) CompleteClaim(ctx context.Context, claimID string) error {
+	_, err := r.queries.CompleteTaskClaim(ctx, claimID)
+	return err
 }
 
 func (r *Repository) CreateRun(ctx context.Context, missionID, taskItemID string) (Run, error) {
@@ -145,4 +166,15 @@ func (r *Repository) UpdateRunStatus(ctx context.Context, runID, status string) 
 		Status: status,
 	})
 	return err
+}
+
+func jsonStringSlice(raw []byte) []string {
+	if len(raw) == 0 {
+		return nil
+	}
+	var values []string
+	if err := json.Unmarshal(raw, &values); err != nil {
+		return nil
+	}
+	return values
 }

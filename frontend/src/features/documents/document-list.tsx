@@ -1,16 +1,27 @@
 import { FormEvent, useState } from "react";
 
-import { DocumentItem } from "../../lib/api";
+import { DocumentItem, DocumentVersion } from "../../lib/api";
 
 type DocumentListProps = {
   documents: DocumentItem[];
+  versionsByDocument: Record<string, DocumentVersion[]>;
   onCreateDocument: (title: string, kind: string) => void;
+  onCreateVersion: (documentId: string, contentText: string) => void;
+  onAdoptVersion: (documentId: string, versionId: string) => void;
   isSubmitting: boolean;
 };
 
-export function DocumentList({ documents, onCreateDocument, isSubmitting }: DocumentListProps) {
+export function DocumentList({
+  documents,
+  versionsByDocument,
+  onCreateDocument,
+  onCreateVersion,
+  onAdoptVersion,
+  isSubmitting
+}: DocumentListProps) {
   const [title, setTitle] = useState("");
   const [kind, setKind] = useState("architecture");
+  const [versionDrafts, setVersionDrafts] = useState<Record<string, string>>({});
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -58,6 +69,62 @@ export function DocumentList({ documents, onCreateDocument, isSubmitting }: Docu
                 <span>{document.currentAdoptedVersionId ?? "draft"}</span>
               </div>
               <h3>{document.title}</h3>
+              <div className="stack">
+                <label className="field">
+                  <span>{`Version content for ${document.title}`}</span>
+                  <textarea
+                    className="field-textarea"
+                    value={versionDrafts[document.id] ?? ""}
+                    onChange={(event) =>
+                      setVersionDrafts((current) => ({
+                        ...current,
+                        [document.id]: event.target.value
+                      }))
+                    }
+                  />
+                </label>
+                <div className="task-actions">
+                  <button
+                    className="action-button"
+                    disabled={isSubmitting}
+                    type="button"
+                    onClick={() => {
+                      const contentText = versionDrafts[document.id]?.trim();
+                      if (!contentText) {
+                        return;
+                      }
+                      onCreateVersion(document.id, contentText);
+                      setVersionDrafts((current) => ({
+                        ...current,
+                        [document.id]: ""
+                      }));
+                    }}
+                  >
+                    Save Version
+                  </button>
+                </div>
+                <div className="stack">
+                  {(versionsByDocument[document.id] ?? []).map((version) => (
+                    <div key={version.id} className="version-card">
+                      <div className="list-card__meta">
+                        <span>{`v${version.version}`}</span>
+                        <span>{version.status}</span>
+                      </div>
+                      <p>{version.contentText}</p>
+                      {version.status !== "adopted" ? (
+                        <button
+                          className="action-button action-button--ghost"
+                          disabled={isSubmitting}
+                          type="button"
+                          onClick={() => onAdoptVersion(document.id, version.id)}
+                        >
+                          Adopt Version
+                        </button>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </article>
           ))
         )}

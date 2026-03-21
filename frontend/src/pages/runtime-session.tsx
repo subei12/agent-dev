@@ -1,8 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
+import { useEffect } from "react";
 
 import { PageShell } from "../components/page-shell";
 import { getRuntimeEvents, getRuntimeSession, getTranscript, getTranscriptAccessAudits } from "../lib/api";
+import { useQueryClient } from "@tanstack/react-query";
+import { subscribeToChannel } from "../lib/sse";
 import { TranscriptAccessAuditTable } from "../features/runtime/transcript-access-audit-table";
 import { RuntimeEventTimeline } from "../features/runtime/runtime-event-timeline";
 import { TranscriptInspector } from "../features/runtime/transcript-inspector";
@@ -11,6 +14,7 @@ const projectId = "proj_1";
 
 export function RuntimeSessionPage() {
   const { sessionId = "session_1" } = useParams();
+  const queryClient = useQueryClient();
 
   const sessionQuery = useQuery({
     queryKey: ["runtime-session", sessionId],
@@ -28,6 +32,15 @@ export function RuntimeSessionPage() {
     queryKey: ["runtime-audits", sessionId],
     queryFn: () => getTranscriptAccessAudits(projectId, sessionId)
   });
+
+  useEffect(() => {
+    return subscribeToChannel(projectId, `session:${sessionId}`, () => {
+      void queryClient.invalidateQueries({ queryKey: ["runtime-session", sessionId] });
+      void queryClient.invalidateQueries({ queryKey: ["runtime-events", sessionId] });
+      void queryClient.invalidateQueries({ queryKey: ["runtime-transcript", sessionId] });
+      void queryClient.invalidateQueries({ queryKey: ["runtime-audits", sessionId] });
+    });
+  }, [queryClient, sessionId]);
 
   return (
     <PageShell

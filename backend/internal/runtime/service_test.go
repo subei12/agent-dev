@@ -13,6 +13,14 @@ type fakeStore struct {
 	entries []TranscriptEntry
 }
 
+type fakePublisher struct {
+	channels []string
+}
+
+func (f *fakePublisher) PublishToChannel(channel string, _ []byte) {
+	f.channels = append(f.channels, channel)
+}
+
 func (f *fakeStore) CreateSession(_ context.Context, cmd StartSessionCmd) (ExecutorSession, error) {
 	session := ExecutorSession{
 		ID:                "session_1",
@@ -120,8 +128,9 @@ func TestSessionLifecycle(t *testing.T) {
 		sessions:    map[string]ExecutorSession{},
 		transcripts: map[string]Transcript{},
 	}
+	publisher := &fakePublisher{}
 
-	svc := NewService(store)
+	svc := NewService(store, publisher)
 	session, err := svc.StartSession(context.Background(), StartSessionCmd{
 		MissionID:          "mission_1",
 		AgentID:            "agent_1",
@@ -156,5 +165,9 @@ func TestSessionLifecycle(t *testing.T) {
 
 	if err := svc.SealSession(context.Background(), session.ID); err != nil {
 		t.Fatalf("seal session: %v", err)
+	}
+
+	if len(publisher.channels) == 0 {
+		t.Fatal("expected runtime events to publish SSE notifications")
 	}
 }

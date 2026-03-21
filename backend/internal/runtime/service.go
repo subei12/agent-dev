@@ -1,6 +1,9 @@
 package runtime
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 type Service interface {
 	StartSession(context.Context, StartSessionCmd) (ExecutorSession, error)
@@ -15,11 +18,23 @@ type Service interface {
 }
 
 type service struct {
-	store Store
+	store     Store
+	publisher EventPublisher
 }
 
-func NewService(store Store) Service {
-	return &service{store: store}
+type EventPublisher interface {
+	PublishToChannel(channel string, data []byte)
+}
+
+func NewService(store Store, publisher ...EventPublisher) Service {
+	var selected EventPublisher
+	if len(publisher) > 0 {
+		selected = publisher[0]
+	}
+	return &service{
+		store:     store,
+		publisher: selected,
+	}
 }
 
 func (s *service) StartSession(ctx context.Context, cmd StartSessionCmd) (ExecutorSession, error) {
@@ -63,11 +78,17 @@ func (s *service) StartSession(ctx context.Context, cmd StartSessionCmd) (Execut
 		return ExecutorSession{}, err
 	}
 
+	s.publish(cmd.MissionID, session.ID, "session_started")
+
 	return session, nil
 }
 
 func (s *service) AppendEvent(ctx context.Context, cmd AppendEventCmd) error {
-	return s.store.CreateEvent(ctx, cmd)
+	if err := s.store.CreateEvent(ctx, cmd); err != nil {
+		return err
+	}
+	s.publish(cmd.MissionID, cmd.ExecutorSessionID, cmd.Type)
+	return nil
 }
 
 func (s *service) AppendTranscriptEntry(ctx context.Context, cmd AppendTranscriptEntryCmd) error {
@@ -79,7 +100,11 @@ func (s *service) AppendTranscriptEntry(ctx context.Context, cmd AppendTranscrip
 	if err != nil {
 		return err
 	}
-	return s.store.CreateTranscriptEntry(ctx, transcript.ID, seq, cmd)
+	if err := s.store.CreateTranscriptEntry(ctx, transcript.ID, seq, cmd); err != nil {
+		return err
+	}
+	s.publish(transcript.MissionID, cmd.ExecutorSessionID, "transcript_appended")
+	return nil
 }
 
 func (s *service) SealSession(ctx context.Context, sessionID string) error {
@@ -103,14 +128,19 @@ func (s *service) SealSession(ctx context.Context, sessionID string) error {
 	}); err != nil {
 		return err
 	}
-	return s.store.UpsertMissionRuntime(ctx, UpsertMissionRuntimeCmd{
+	if err := s.store.UpsertMissionRuntime(ctx, UpsertMissionRuntimeCmd{
 		MissionID:                session.MissionID,
 		AgentID:                  session.AgentID,
 		Status:                   "completed",
 		CurrentTaskItemID:        session.TaskItemID,
 		CurrentExecutorSessionID: session.ID,
 		StatusSummary:            "session completed",
-	})
+	}); err != nil {
+		return err
+	}
+
+	s.publish(session.MissionID, session.ID, "session_completed")
+	return nil
 }
 
 func (s *service) ListMissionRuntimes(ctx context.Context, missionID string) ([]MissionAgentRuntime, error) {
@@ -147,4 +177,24 @@ func (s *service) GetTranscriptView(ctx context.Context, sessionID, actorUserID,
 
 func (s *service) ListAccessAudits(ctx context.Context, sessionID string) ([]TranscriptAccessAudit, error) {
 	return s.store.ListAccessAudits(ctx, sessionID)
+}
+
+func (s *service) publish(missionID, sessionID, eventType string) {
+	if s.publisher == nil {
+		return
+	}
+
+	payload, err := json.Marshal(map[string]string{
+		"type":      eventType,
+		"missionId": missionID,
+		"sessionId": sessionID,
+	})
+	if err != nil {
+		return
+	}
+
+	s.publisher.PublishToChannel("mission:"+missionID, payload)
+	if sessionID != "" {
+		s.publisher.PublishToChannel("session:"+sessionID, payload)
+	}
 }

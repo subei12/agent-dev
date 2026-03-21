@@ -13,6 +13,16 @@ export type DocumentItem = {
   currentAdoptedVersionId?: string;
 };
 
+export type DocumentVersion = {
+  id: string;
+  documentId: string;
+  version: number;
+  status: string;
+  contentFormat: string;
+  contentHash: string;
+  contentText: string;
+};
+
 export type DiscussionSession = {
   id: string;
   topic: string;
@@ -166,9 +176,19 @@ export async function getRuntimeEvents(projectId: string, sessionId: string): Pr
 
 export async function getTranscript(projectId: string, sessionId: string): Promise<TranscriptView | null> {
   try {
-    return await request<TranscriptView>(
-      `/api/projects/${projectId}/executor-sessions/${sessionId}/transcript?view=redacted`
+    const response = await fetch(
+      `${API_BASE}/api/projects/${projectId}/executor-sessions/${sessionId}/transcript?view=redacted`,
+      {
+        headers: {
+          "X-Actor-Id": "frontend-demo-user",
+          "X-Access-Scope": "mission_member_transcript"
+        }
+      }
     );
+    if (!response.ok) {
+      throw new Error(`request failed: ${response.status}`);
+    }
+    return response.json() as Promise<TranscriptView>;
   } catch {
     return null;
   }
@@ -199,6 +219,56 @@ export function createDocument(projectId: string, missionId: string, title: stri
     title,
     kind
   });
+}
+
+export async function getDocumentVersions(
+  projectId: string,
+  missionId: string,
+  documentId: string
+): Promise<DocumentVersion[]> {
+  try {
+    return await request<DocumentVersion[]>(
+      `/api/projects/${projectId}/missions/${missionId}/documents/${documentId}/versions`
+    );
+  } catch {
+    return [];
+  }
+}
+
+export function createDocumentVersion(
+  projectId: string,
+  missionId: string,
+  documentId: string,
+  contentText: string
+) {
+  const contentHash = `hash-${documentId}-${contentText.length}`;
+
+  return send<DocumentVersion>(
+    `/api/projects/${projectId}/missions/${missionId}/documents/${documentId}/versions`,
+    "POST",
+    {
+      contentFormat: "md",
+      storageKind: "db_text",
+      contentHash,
+      contentText,
+      producedByAgentId: "agent_admin"
+    }
+  );
+}
+
+export function adoptDocumentVersion(
+  projectId: string,
+  missionId: string,
+  documentId: string,
+  versionId: string
+) {
+  return send<DocumentVersion>(
+    `/api/projects/${projectId}/missions/${missionId}/documents/${documentId}/adopt`,
+    "POST",
+    {
+      versionId
+    }
+  );
 }
 
 export function claimTask(projectId: string, missionId: string, taskId: string) {

@@ -129,7 +129,7 @@ test("mission workspace renders seeded api data and runtime transcript", async (
   await page.goto("/missions/mission_1");
 
   await expect(page.getByText("Seeded mission")).toBeVisible();
-  await expect(page.getByText("Architecture Snapshot")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Architecture Snapshot" })).toBeVisible();
   await expect(page.getByText("Runtime observability scope")).toBeVisible();
   await expect(page.getByText("streaming codex session")).toBeVisible();
   await expect(page.getByText("Implement runtime observability")).toBeVisible();

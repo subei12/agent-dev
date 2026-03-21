@@ -19,6 +19,27 @@ test("mission workspace supports creating discussion, document, claiming task, a
       currentAdoptedVersionId: "docv_2"
     }
   ];
+  const versionsByDocument: Record<string, Array<{
+    id: string;
+    documentId: string;
+    version: number;
+    status: string;
+    contentFormat: string;
+    contentHash: string;
+    contentText: string;
+  }>> = {
+    doc_1: [
+      {
+        id: "docv_2",
+        documentId: "doc_1",
+        version: 2,
+        status: "adopted",
+        contentFormat: "md",
+        contentHash: "hash-docv2",
+        contentText: "Adopted architecture"
+      }
+    ]
+  };
 
   const taskBoard = {
     id: "board_1",
@@ -83,6 +104,59 @@ test("mission workspace supports creating discussion, document, claiming task, a
 
     await route.fulfill({ json: documents });
   });
+
+  await page.route(
+    /http:\/\/127\.0\.0\.1:8080\/api\/projects\/proj_1\/missions\/mission_1\/documents\/([^/]+)\/versions/,
+    async (route) => {
+      const documentId = route.request().url().split("/documents/")[1].split("/versions")[0];
+
+      if (route.request().method() === "POST") {
+        const body = JSON.parse(route.request().postData() ?? "{}");
+        const nextVersion = (versionsByDocument[documentId]?.length ?? 0) + 1;
+        const created = {
+          id: `${documentId}_version_${nextVersion}`,
+          documentId,
+          version: nextVersion,
+          status: "proposed",
+          contentFormat: body.contentFormat,
+          contentHash: body.contentHash,
+          contentText: body.contentText
+        };
+        versionsByDocument[documentId] = [...(versionsByDocument[documentId] ?? []), created];
+        await route.fulfill({
+          status: 201,
+          json: created
+        });
+        return;
+      }
+
+      await route.fulfill({
+        json: versionsByDocument[documentId] ?? []
+      });
+    }
+  );
+
+  await page.route(
+    /http:\/\/127\.0\.0\.1:8080\/api\/projects\/proj_1\/missions\/mission_1\/documents\/([^/]+)\/adopt/,
+    async (route) => {
+      const documentId = route.request().url().split("/documents/")[1].split("/adopt")[0];
+      const body = JSON.parse(route.request().postData() ?? "{}");
+
+      versionsByDocument[documentId] = (versionsByDocument[documentId] ?? []).map((version) => ({
+        ...version,
+        status: version.id === body.versionId ? "adopted" : "proposed"
+      }));
+      const adopted = versionsByDocument[documentId].find((version) => version.id === body.versionId)!;
+      const document = documents.find((item) => item.id === documentId);
+      if (document) {
+        document.currentAdoptedVersionId = adopted.id;
+      }
+      await route.fulfill({
+        status: 201,
+        json: adopted
+      });
+    }
+  );
 
   await page.route("http://127.0.0.1:8080/api/projects/proj_1/missions/mission_1/task-board", async (route) => {
     await route.fulfill({ json: taskBoard });
@@ -169,7 +243,13 @@ test("mission workspace supports creating discussion, document, claiming task, a
 
   await page.getByLabel("Document title").fill("Test Strategy");
   await page.getByRole("button", { name: "Add Document" }).click();
-  await expect(page.getByText("Test Strategy")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Test Strategy" })).toBeVisible();
+
+  await page.getByLabel("Version content for Architecture Snapshot").fill("Version 3 draft");
+  await page.getByRole("button", { name: "Save Version" }).first().click();
+  await expect(page.getByText("Version 3 draft")).toBeVisible();
+  await page.getByRole("button", { name: "Adopt Version" }).last().click();
+  await expect(page.getByText("adopted", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Claim Task" }).click();
   await expect(page.getByText("Task claimed", { exact: true })).toBeVisible();

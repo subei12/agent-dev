@@ -55,6 +55,10 @@ func (h *Handler) getTranscript(w http.ResponseWriter, r *http.Request) {
 	if view == "" {
 		view = "summary"
 	}
+	if view == "redacted" && !canViewRedactedTranscript(r.Header.Get("X-Access-Scope")) {
+		http.Error(w, "redacted transcript access denied", http.StatusForbidden)
+		return
+	}
 	actorUserID := r.Header.Get("X-Actor-Id")
 	if actorUserID == "" {
 		actorUserID = "anonymous"
@@ -80,4 +84,13 @@ func writeJSON(w http.ResponseWriter, status int, value any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(value)
+}
+
+func canViewRedactedTranscript(scope string) bool {
+	switch scope {
+	case "mission_member_transcript", "project_auditor":
+		return true
+	default:
+		return false
+	}
 }

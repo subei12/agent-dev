@@ -38,3 +38,10 @@ func (h *Hub) Publish(event Event) {
 		}
 	}
 }
+
+func (h *Hub) PublishToChannel(channel string, data []byte) {
+	h.Publish(Event{
+		Channel: channel,
+		Data:    data,
+	})
+}

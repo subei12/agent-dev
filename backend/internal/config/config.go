@@ -10,6 +10,9 @@ type Config struct {
 	Addr        string
 	DatabaseURL string
 	S3Endpoint  string
+	S3AccessKey string
+	S3SecretKey string
+	S3Bucket    string
 }
 
 func Load() (Config, error) {
@@ -33,11 +36,29 @@ func Load() (Config, error) {
 		s3Endpoint = "http://localhost:9000"
 	}
 
+	s3AccessKey := os.Getenv("S3_ACCESS_KEY")
+	if s3AccessKey == "" {
+		s3AccessKey = "minio"
+	}
+
+	s3SecretKey := os.Getenv("S3_SECRET_KEY")
+	if s3SecretKey == "" {
+		s3SecretKey = "minio123"
+	}
+
+	s3Bucket := os.Getenv("S3_BUCKET")
+	if s3Bucket == "" {
+		s3Bucket = "agent-platform-dev"
+	}
+
 	return Config{
 		Env:         env,
 		Addr:        addr,
 		DatabaseURL: databaseURL,
 		S3Endpoint:  s3Endpoint,
+		S3AccessKey: s3AccessKey,
+		S3SecretKey: s3SecretKey,
+		S3Bucket:    s3Bucket,
 	}, nil
 }
 

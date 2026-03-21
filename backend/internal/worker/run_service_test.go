@@ -14,6 +14,10 @@ func (f *fakeStore) GetClaimExecutionContext(context.Context, string) (ClaimExec
 	return f.claimContext, nil
 }
 
+func (f *fakeStore) CompleteClaim(context.Context, string) error {
+	return nil
+}
+
 func (f *fakeStore) CreateRun(_ context.Context, missionID, taskItemID string) (Run, error) {
 	run := Run{ID: "run_1", MissionID: missionID, TaskItemID: taskItemID, Status: "running"}
 	f.runs = append(f.runs, run)

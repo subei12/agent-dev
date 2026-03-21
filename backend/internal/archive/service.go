@@ -34,11 +34,23 @@ type Service interface {
 }
 
 type service struct {
-	store Store
+	store  Store
+	writer ObjectWriter
 }
 
-func NewService(store Store) Service {
-	return &service{store: store}
+type ObjectWriter interface {
+	PutJSON(context.Context, string, any) error
+}
+
+func NewService(store Store, writer ...ObjectWriter) Service {
+	var selected ObjectWriter
+	if len(writer) > 0 {
+		selected = writer[0]
+	}
+	return &service{
+		store:  store,
+		writer: selected,
+	}
 }
 
 func (s *service) BuildManifest(ctx context.Context, missionID string) (ArchiveManifest, error) {
@@ -53,6 +65,11 @@ func (s *service) CreateArchive(ctx context.Context, missionID string) (MissionA
 	manifest, err := s.BuildManifest(ctx, missionID)
 	if err != nil {
 		return MissionArchive{}, ArchiveManifest{}, err
+	}
+	if s.writer != nil {
+		if err := s.writer.PutJSON(ctx, archiveManifestObjectKey(missionID), manifest); err != nil {
+			return MissionArchive{}, ArchiveManifest{}, err
+		}
 	}
 	archive, err := s.store.CreateArchiveRecord(ctx, missionID, manifest)
 	if err != nil {
@@ -140,6 +157,10 @@ func archiveFromRow(row sqlc.MissionArchive) MissionArchive {
 		BundleObjectKey:   stringValue(row.BundleObjectKey),
 		Hash:              stringValue(row.Hash),
 	}
+}
+
+func archiveManifestObjectKey(missionID string) string {
+	return "archives/" + missionID + "/manifest.json"
 }
 
 func textValue(value string) pgtype.Text {

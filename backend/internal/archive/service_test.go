@@ -6,6 +6,9 @@ import (
 )
 
 type fakeStore struct{}
+type fakeWriter struct {
+	objectKeys []string
+}
 
 func (f fakeStore) BuildArchiveData(context.Context, string) (ArchiveData, error) {
 	return ArchiveData{
@@ -28,6 +31,11 @@ func (f fakeStore) GetArchiveByMission(context.Context, string) (MissionArchive,
 	return MissionArchive{ID: "archive_1", MissionID: "mission_1", Status: "uploaded"}, nil
 }
 
+func (f *fakeWriter) PutJSON(_ context.Context, objectKey string, _ any) error {
+	f.objectKeys = append(f.objectKeys, objectKey)
+	return nil
+}
+
 func TestBuildArchiveManifestIncludesRuntimeSummary(t *testing.T) {
 	svc := NewService(fakeStore{})
 	manifest, err := svc.BuildManifest(context.Background(), "mission_1")
@@ -39,5 +47,18 @@ func TestBuildArchiveManifestIncludesRuntimeSummary(t *testing.T) {
 	}
 	if len(manifest.IncludedDecisionIDs) == 0 {
 		t.Fatal("expected included decision ids")
+	}
+}
+
+func TestCreateArchiveWritesManifestObject(t *testing.T) {
+	writer := &fakeWriter{}
+	svc := NewService(fakeStore{}, writer)
+
+	_, _, err := svc.CreateArchive(context.Background(), "mission_1")
+	if err != nil {
+		t.Fatalf("create archive: %v", err)
+	}
+	if len(writer.objectKeys) != 1 {
+		t.Fatalf("expected 1 written object key, got %d", len(writer.objectKeys))
 	}
 }
