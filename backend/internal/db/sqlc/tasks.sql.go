@@ -11,6 +11,30 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const completeTaskClaim = `-- name: CompleteTaskClaim :one
+update task_claims
+set
+  status = 'completed',
+  ended_at = now()
+where id = $1
+returning id, task_item_id, agent_id, status, claim_reason, created_at, ended_at
+`
+
+func (q *Queries) CompleteTaskClaim(ctx context.Context, id string) (TaskClaim, error) {
+	row := q.db.QueryRow(ctx, completeTaskClaim, id)
+	var i TaskClaim
+	err := row.Scan(
+		&i.ID,
+		&i.TaskItemID,
+		&i.AgentID,
+		&i.Status,
+		&i.ClaimReason,
+		&i.CreatedAt,
+		&i.EndedAt,
+	)
+	return i, err
+}
+
 const createReviewCheckpoint = `-- name: CreateReviewCheckpoint :one
 insert into review_checkpoints (
   id,
@@ -331,6 +355,34 @@ func (q *Queries) GetTaskItem(ctx context.Context, id string) (TaskItem, error) 
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const listActiveTaskClaimIDs = `-- name: ListActiveTaskClaimIDs :many
+select id
+from task_claims
+where status = 'active'
+  and ended_at is null
+order by created_at asc
+`
+
+func (q *Queries) ListActiveTaskClaimIDs(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, listActiveTaskClaimIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listTaskItemsByBoard = `-- name: ListTaskItemsByBoard :many

@@ -103,10 +103,14 @@ select
   b.mission_id,
   c.task_item_id,
   c.agent_id,
-  ''::text as executor_profile_id
+  a.executor_profile_id,
+  ep.command,
+  ep.args_json
 from task_claims c
 join task_items t on t.id = c.task_item_id
 join task_boards b on b.id = t.board_id
+join agents a on a.id = c.agent_id
+join executor_profiles ep on ep.id = a.executor_profile_id
 where c.id = $1
 `
 
@@ -116,6 +120,8 @@ type GetTaskClaimExecutionContextRow struct {
 	TaskItemID        string `json:"task_item_id"`
 	AgentID           string `json:"agent_id"`
 	ExecutorProfileID string `json:"executor_profile_id"`
+	Command           string `json:"command"`
+	ArgsJson          []byte `json:"args_json"`
 }
 
 func (q *Queries) GetTaskClaimExecutionContext(ctx context.Context, id string) (GetTaskClaimExecutionContextRow, error) {
@@ -127,6 +133,8 @@ func (q *Queries) GetTaskClaimExecutionContext(ctx context.Context, id string) (
 		&i.TaskItemID,
 		&i.AgentID,
 		&i.ExecutorProfileID,
+		&i.Command,
+		&i.ArgsJson,
 	)
 	return i, err
 }
