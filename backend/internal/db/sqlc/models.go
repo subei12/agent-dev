@@ -208,6 +208,17 @@ type MissionMember struct {
 	JoinedAt  pgtype.Timestamptz `json:"joined_at"`
 }
 
+type NodeRun struct {
+	ID                string             `json:"id"`
+	RunID             string             `json:"run_id"`
+	NodeKey           string             `json:"node_key"`
+	Status            string             `json:"status"`
+	ExecutorSessionID pgtype.Text        `json:"executor_session_id"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	StartedAt         pgtype.Timestamptz `json:"started_at"`
+	FinishedAt        pgtype.Timestamptz `json:"finished_at"`
+}
+
 type Project struct {
 	ID          string             `json:"id"`
 	Name        string             `json:"name"`
@@ -225,6 +236,15 @@ type RepoBinding struct {
 	DefaultBranch string             `json:"default_branch"`
 	AuthMode      string             `json:"auth_mode"`
 	WriteEnabled  bool               `json:"write_enabled"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type RepoSnapshot struct {
+	ID            string             `json:"id"`
+	MissionID     string             `json:"mission_id"`
+	RepoBindingID pgtype.Text        `json:"repo_binding_id"`
+	CommitSha     string             `json:"commit_sha"`
+	RefName       pgtype.Text        `json:"ref_name"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 }
 
@@ -252,6 +272,26 @@ type Role struct {
 	PermissionsJson []byte             `json:"permissions_json"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Run struct {
+	ID         string             `json:"id"`
+	MissionID  string             `json:"mission_id"`
+	TaskItemID pgtype.Text        `json:"task_item_id"`
+	Status     string             `json:"status"`
+	InputsJson []byte             `json:"inputs_json"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	StartedAt  pgtype.Timestamptz `json:"started_at"`
+	FinishedAt pgtype.Timestamptz `json:"finished_at"`
+}
+
+type RunArtifactInput struct {
+	ID                string             `json:"id"`
+	RunID             string             `json:"run_id"`
+	ArtifactID        string             `json:"artifact_id"`
+	ArtifactVersionID string             `json:"artifact_version_id"`
+	Alias             pgtype.Text        `json:"alias"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 }
 
 type RuntimeObservabilityPolicy struct {
