@@ -3,12 +3,14 @@ package worker
 import (
 	"context"
 	"testing"
+	"time"
 )
 
 type fakeStore struct {
 	claimContext ClaimExecutionContext
 	runs         []Run
 	acquired     bool
+	acquireOK    bool
 	completed    bool
 	failed       bool
 }
@@ -17,9 +19,16 @@ func (f *fakeStore) GetClaimExecutionContext(context.Context, string) (ClaimExec
 	return f.claimContext, nil
 }
 
-func (f *fakeStore) AcquireClaimExecution(context.Context, string, string) (bool, error) {
+func (f *fakeStore) AcquireClaimExecution(context.Context, string, string, time.Time) (bool, error) {
 	f.acquired = true
+	if !f.acquireOK {
+		return false, nil
+	}
 	return true, nil
+}
+
+func (f *fakeStore) TouchClaimHeartbeat(context.Context, string, string) error {
+	return nil
 }
 
 func (f *fakeStore) FailClaim(context.Context, string, string, int32) error {
@@ -63,6 +72,7 @@ func TestClaimedTaskCreatesRunAndExecutorSession(t *testing.T) {
 			AgentID:           "agent_1",
 			ExecutorProfileID: "exec_1",
 		},
+		acquireOK: true,
 	}
 	launcher := &fakeLauncher{}
 	svc := NewRunService(store, launcher)
@@ -94,6 +104,7 @@ func TestClaimedTaskFailureMarksClaimForRetry(t *testing.T) {
 			AgentID:           "agent_1",
 			ExecutorProfileID: "exec_1",
 		},
+		acquireOK: true,
 	}
 	launcher := &fakeLauncher{err: context.DeadlineExceeded}
 	svc := NewRunService(store, launcher)
@@ -107,5 +118,27 @@ func TestClaimedTaskFailureMarksClaimForRetry(t *testing.T) {
 	}
 	if store.completed {
 		t.Fatal("did not expect completed claim on launcher failure")
+	}
+}
+
+func TestClaimAlreadyLockedSkipsExecution(t *testing.T) {
+	store := &fakeStore{
+		claimContext: ClaimExecutionContext{
+			ClaimID:           "claim_1",
+			MissionID:         "mission_1",
+			TaskItemID:        "task_1",
+			AgentID:           "agent_1",
+			ExecutorProfileID: "exec_1",
+		},
+		acquireOK: false,
+	}
+	launcher := &fakeLauncher{}
+	svc := NewRunService(store, launcher)
+
+	if err := svc.ExecuteClaimedTask(context.Background(), "claim_1"); err != nil {
+		t.Fatalf("execute claimed task: %v", err)
+	}
+	if launcher.called {
+		t.Fatal("did not expect executor launch when lock is not acquired")
 	}
 }

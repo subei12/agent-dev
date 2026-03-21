@@ -90,7 +90,10 @@ set
 where id = $1
   and status = 'active'
   and ended_at is null
-  and execution_lock_token is null
+  and (
+    execution_lock_token is null
+    or last_heartbeat_at < $3
+  )
 returning id, task_item_id, agent_id, status, claim_reason, created_at, ended_at;
 
 -- name: ReleaseTaskClaimExecution :one
@@ -101,14 +104,22 @@ set
 where id = $1
 returning id, task_item_id, agent_id, status, claim_reason, created_at, ended_at;
 
+-- name: UpdateTaskClaimHeartbeat :one
+update task_claims
+set
+  last_heartbeat_at = now()
+where id = $1
+  and execution_lock_token = $2
+returning id, task_item_id, agent_id, status, claim_reason, created_at, ended_at;
+
 -- name: FailTaskClaimExecution :one
 update task_claims
 set
-  status = case when attempt_count >= sqlc.arg(max_attempts) then 'failed' else 'active' end,
+  status = case when attempt_count >= $2 then 'failed' else 'active' end,
   execution_lock_token = null,
-  last_error = sqlc.arg(last_error),
+  last_error = $3,
   last_heartbeat_at = now(),
-  ended_at = case when attempt_count >= sqlc.arg(max_attempts) then now() else null end
+  ended_at = case when attempt_count >= $2 then now() else null end
 where id = $1
 returning id, task_item_id, agent_id, status, claim_reason, created_at, ended_at;
 

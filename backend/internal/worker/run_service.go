@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -44,7 +45,8 @@ type ExecutorTaskInput struct {
 
 type Store interface {
 	GetClaimExecutionContext(context.Context, string) (ClaimExecutionContext, error)
-	AcquireClaimExecution(context.Context, string, string) (bool, error)
+	AcquireClaimExecution(context.Context, string, string, time.Time) (bool, error)
+	TouchClaimHeartbeat(context.Context, string, string) error
 	FailClaim(context.Context, string, string, int32) error
 	CompleteClaim(context.Context, string) error
 	CreateRun(context.Context, string, string) (Run, error)
@@ -62,6 +64,8 @@ type RunService struct {
 }
 
 const maxClaimExecutionAttempts int32 = 3
+const claimHeartbeatInterval = 5 * time.Second
+const staleClaimLockAfter = 30 * time.Second
 
 func NewRunService(store Store, launcher Launcher) *RunService {
 	return &RunService{store: store, launcher: launcher}
@@ -69,13 +73,17 @@ func NewRunService(store Store, launcher Launcher) *RunService {
 
 func (s *RunService) ExecuteClaimedTask(ctx context.Context, claimID string) error {
 	lockToken := uuid.NewString()
-	acquired, err := s.store.AcquireClaimExecution(ctx, claimID, lockToken)
+	acquired, err := s.store.AcquireClaimExecution(ctx, claimID, lockToken, time.Now().Add(-staleClaimLockAfter))
 	if err != nil {
 		return err
 	}
 	if !acquired {
 		return nil
 	}
+
+	heartbeatCtx, stopHeartbeat := context.WithCancel(ctx)
+	defer stopHeartbeat()
+	go s.runHeartbeatLoop(heartbeatCtx, claimID, lockToken)
 
 	execCtx, err := s.store.GetClaimExecutionContext(ctx, claimID)
 	if err != nil {
@@ -107,6 +115,20 @@ func (s *RunService) ExecuteClaimedTask(ctx context.Context, claimID string) err
 		return err
 	}
 	return s.store.CompleteClaim(ctx, claimID)
+}
+
+func (s *RunService) runHeartbeatLoop(ctx context.Context, claimID, lockToken string) {
+	ticker := time.NewTicker(claimHeartbeatInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			_ = s.store.TouchClaimHeartbeat(ctx, claimID, lockToken)
+		}
+	}
 }
 
 type Repository struct {
@@ -141,10 +163,11 @@ func (r *Repository) ListActiveClaimIDs(ctx context.Context) ([]string, error) {
 	return r.queries.ListActiveTaskClaimIDs(ctx)
 }
 
-func (r *Repository) AcquireClaimExecution(ctx context.Context, claimID, lockToken string) (bool, error) {
+func (r *Repository) AcquireClaimExecution(ctx context.Context, claimID, lockToken string, staleBefore time.Time) (bool, error) {
 	_, err := r.queries.AcquireTaskClaimExecution(ctx, sqlc.AcquireTaskClaimExecutionParams{
 		ID:                 claimID,
 		ExecutionLockToken: textValue(lockToken),
+		LastHeartbeatAt:    timestamptzValue(staleBefore),
 	})
 	if err == nil {
 		return true, nil
@@ -155,11 +178,19 @@ func (r *Repository) AcquireClaimExecution(ctx context.Context, claimID, lockTok
 	return false, err
 }
 
+func (r *Repository) TouchClaimHeartbeat(ctx context.Context, claimID, lockToken string) error {
+	_, err := r.queries.UpdateTaskClaimHeartbeat(ctx, sqlc.UpdateTaskClaimHeartbeatParams{
+		ID:                 claimID,
+		ExecutionLockToken: textValue(lockToken),
+	})
+	return err
+}
+
 func (r *Repository) FailClaim(ctx context.Context, claimID, lastError string, maxAttempts int32) error {
 	_, err := r.queries.FailTaskClaimExecution(ctx, sqlc.FailTaskClaimExecutionParams{
-		ID:          claimID,
-		MaxAttempts: maxAttempts,
-		LastError:   textValue(lastError),
+		ID:           claimID,
+		AttemptCount: maxAttempts,
+		LastError:    textValue(lastError),
 	})
 	return err
 }
