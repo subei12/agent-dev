@@ -5,14 +5,21 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+
+	"github.com/your-org/agent-platform/internal/authz"
 )
 
 type Handler struct {
-	service Service
+	service    Service
+	authorizer authz.Authorizer
 }
 
-func NewHandler(service Service) *Handler {
-	return &Handler{service: service}
+func NewHandler(service Service, authorizer ...authz.Authorizer) *Handler {
+	var selected authz.Authorizer
+	if len(authorizer) > 0 {
+		selected = authorizer[0]
+	}
+	return &Handler{service: service, authorizer: selected}
 }
 
 func (h *Handler) RegisterRoutes(r chi.Router) {
@@ -48,6 +55,10 @@ func (h *Handler) listSessions(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
+	if err := h.require(r); err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
 	var req createSessionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -67,6 +78,10 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) createRound(w http.ResponseWriter, r *http.Request) {
+	if err := h.require(r); err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
 	var req createRoundRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -94,4 +109,11 @@ func writeJSON(w http.ResponseWriter, status int, value any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(value)
+}
+
+func (h *Handler) require(r *http.Request) error {
+	if h.authorizer == nil {
+		return nil
+	}
+	return h.authorizer.Require(r.Context(), chi.URLParam(r, "projectId"), r.Header.Get("X-Actor-Id"), authz.CapabilityManageMission)
 }

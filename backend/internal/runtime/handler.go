@@ -5,14 +5,21 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+
+	"github.com/your-org/agent-platform/internal/authz"
 )
 
 type Handler struct {
-	service Service
+	service    Service
+	authorizer authz.Authorizer
 }
 
-func NewHandler(service Service) *Handler {
-	return &Handler{service: service}
+func NewHandler(service Service, authorizer ...authz.Authorizer) *Handler {
+	var selected authz.Authorizer
+	if len(authorizer) > 0 {
+		selected = authorizer[0]
+	}
+	return &Handler{service: service, authorizer: selected}
 }
 
 func (h *Handler) RegisterRoutes(r chi.Router) {
@@ -55,13 +62,15 @@ func (h *Handler) getTranscript(w http.ResponseWriter, r *http.Request) {
 	if view == "" {
 		view = "summary"
 	}
-	if view == "redacted" && !canViewRedactedTranscript(r.Header.Get("X-Access-Scope")) {
-		http.Error(w, "redacted transcript access denied", http.StatusForbidden)
-		return
-	}
 	actorUserID := r.Header.Get("X-Actor-Id")
 	if actorUserID == "" {
 		actorUserID = "anonymous"
+	}
+	if view == "redacted" && h.authorizer != nil {
+		if err := h.authorizer.Require(r.Context(), chi.URLParam(r, "projectId"), actorUserID, authz.CapabilityViewTranscripts); err != nil {
+			http.Error(w, "redacted transcript access denied", http.StatusForbidden)
+			return
+		}
 	}
 	transcript, err := h.service.GetTranscriptView(r.Context(), chi.URLParam(r, "sessionId"), actorUserID, view)
 	if err != nil {
@@ -84,13 +93,4 @@ func writeJSON(w http.ResponseWriter, status int, value any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(value)
-}
-
-func canViewRedactedTranscript(scope string) bool {
-	switch scope {
-	case "mission_member_transcript", "project_auditor":
-		return true
-	default:
-		return false
-	}
 }

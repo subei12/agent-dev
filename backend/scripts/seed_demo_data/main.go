@@ -64,6 +64,7 @@ func seedDemoData(ctx context.Context, pool *pgxpool.Pool) error {
 		`delete from missions where id = 'mission_1'`,
 		`delete from agent_team_members where id in ('team_member_admin','team_member_backend')`,
 		`delete from agent_teams where id = 'team_1'`,
+		`delete from project_access_grants where id in ('grant_demo_admin','grant_frontend_demo')`,
 		`delete from agents where id in ('agent_admin','agent_backend')`,
 		`delete from roles where id in ('role_admin','role_backend')`,
 		`delete from executor_profiles where id in ('exec_admin','exec_backend')`,
@@ -107,6 +108,12 @@ func seedDemoData(ctx context.Context, pool *pgxpool.Pool) error {
 			[]any{"admin_policy_1", "proj_1"}},
 		{`insert into runtime_observability_policies (id, project_id) values ($1,$2)`,
 			[]any{"runtime_policy_1", "proj_1"}},
+		{`insert into project_access_grants (id, project_id, actor_user_id, can_manage_mission, can_view_transcripts, can_export_transcripts, can_manage_archive)
+		  values ($1,$2,$3,$4,$5,$6,$7)`,
+			[]any{"grant_demo_admin", "proj_1", "demo-admin", true, true, false, true}},
+		{`insert into project_access_grants (id, project_id, actor_user_id, can_manage_mission, can_view_transcripts, can_export_transcripts, can_manage_archive)
+		  values ($1,$2,$3,$4,$5,$6,$7)`,
+			[]any{"grant_frontend_demo", "proj_1", "frontend-demo-user", true, true, false, true}},
 		{`insert into missions (id, project_id, title, description, source_type, status, admin_agent_id, team_id, repo_binding_id, created_by)
 		  values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
 			[]any{"mission_1", "proj_1", "Deliver runtime telemetry dashboard", "Seeded mission showing discussions, docs, tasks, runtime and archive.", "project_task", "implementation", "agent_admin", "team_1", "repo_1", "demo-user"}},

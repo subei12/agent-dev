@@ -7,6 +7,7 @@ import (
 	platformconfig "github.com/your-org/agent-platform/internal/config"
 	platformdb "github.com/your-org/agent-platform/internal/db"
 	"github.com/your-org/agent-platform/internal/approval"
+	"github.com/your-org/agent-platform/internal/authz"
 	"github.com/your-org/agent-platform/internal/archive"
 	"github.com/your-org/agent-platform/internal/discussion"
 	"github.com/your-org/agent-platform/internal/document"
@@ -34,26 +35,31 @@ func NewAPI(cfg platformconfig.Config) (*APIApp, error) {
 	if err != nil {
 		return nil, err
 	}
+	authorizer := authz.New(pool)
 
 	missionHandler := mission.NewHandler(
 		mission.NewService(
 			mission.NewRepository(pool),
 		),
+		authorizer,
 	)
 	documentHandler := document.NewHandler(
 		document.NewService(
 			document.NewRepository(pool),
 		),
+		authorizer,
 	)
 	discussionHandler := discussion.NewHandler(
 		discussion.NewService(
 			discussion.NewRepository(pool),
 		),
+		authorizer,
 	)
 	taskHandler := task.NewHandler(
 		task.NewService(
 			task.NewRepository(pool),
 		),
+		authorizer,
 	)
 	runtimeHandler := runtime.NewHandler(
 		runtime.NewServiceWithDeps(
@@ -61,6 +67,7 @@ func NewAPI(cfg platformconfig.Config) (*APIApp, error) {
 			hub,
 			objectStore,
 		),
+		authorizer,
 	)
 	sseHandler := sse.NewHandler(hub)
 	approvalHandler := approval.NewHandler(
@@ -71,6 +78,7 @@ func NewAPI(cfg platformconfig.Config) (*APIApp, error) {
 			archive.NewRepository(pool),
 			objectStore,
 		),
+		authorizer,
 	)
 
 	return &APIApp{

@@ -91,9 +91,14 @@ export type MissionArchiveResult = {
 };
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8080";
+const ACTOR_ID = "frontend-demo-user";
 
 async function request<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`);
+  const response = await fetch(`${API_BASE}${path}`, {
+    headers: {
+      "X-Actor-Id": ACTOR_ID
+    }
+  });
   if (!response.ok) {
     throw new Error(`request failed: ${response.status}`);
   }
@@ -104,7 +109,8 @@ async function send<T>(path: string, method: string, body?: unknown): Promise<T>
   const response = await fetch(`${API_BASE}${path}`, {
     method,
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      "X-Actor-Id": ACTOR_ID
     },
     body: body ? JSON.stringify(body) : undefined
   });
@@ -180,8 +186,7 @@ export async function getTranscript(projectId: string, sessionId: string): Promi
       `${API_BASE}/api/projects/${projectId}/executor-sessions/${sessionId}/transcript?view=redacted`,
       {
         headers: {
-          "X-Actor-Id": "frontend-demo-user",
-          "X-Access-Scope": "mission_member_transcript"
+          "X-Actor-Id": ACTOR_ID
         }
       }
     );
