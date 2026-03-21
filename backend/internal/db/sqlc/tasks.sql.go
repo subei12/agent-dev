@@ -20,13 +20,17 @@ set
 where id = $1
   and status = 'active'
   and ended_at is null
-  and execution_lock_token is null
+  and (
+    execution_lock_token is null
+    or last_heartbeat_at < $3
+  )
 returning id, task_item_id, agent_id, status, claim_reason, created_at, ended_at
 `
 
 type AcquireTaskClaimExecutionParams struct {
-	ID                 string      `json:"id"`
-	ExecutionLockToken pgtype.Text `json:"execution_lock_token"`
+	ID                 string             `json:"id"`
+	ExecutionLockToken pgtype.Text        `json:"execution_lock_token"`
+	LastHeartbeatAt    pgtype.Timestamptz `json:"last_heartbeat_at"`
 }
 
 type AcquireTaskClaimExecutionRow struct {
@@ -40,7 +44,7 @@ type AcquireTaskClaimExecutionRow struct {
 }
 
 func (q *Queries) AcquireTaskClaimExecution(ctx context.Context, arg AcquireTaskClaimExecutionParams) (AcquireTaskClaimExecutionRow, error) {
-	row := q.db.QueryRow(ctx, acquireTaskClaimExecution, arg.ID, arg.ExecutionLockToken)
+	row := q.db.QueryRow(ctx, acquireTaskClaimExecution, arg.ID, arg.ExecutionLockToken, arg.LastHeartbeatAt)
 	var i AcquireTaskClaimExecutionRow
 	err := row.Scan(
 		&i.ID,
@@ -387,9 +391,9 @@ returning id, task_item_id, agent_id, status, claim_reason, created_at, ended_at
 `
 
 type FailTaskClaimExecutionParams struct {
-	ID          string      `json:"id"`
-	MaxAttempts int32       `json:"max_attempts"`
-	LastError   pgtype.Text `json:"last_error"`
+	ID           string      `json:"id"`
+	AttemptCount int32       `json:"attempt_count"`
+	LastError    pgtype.Text `json:"last_error"`
 }
 
 type FailTaskClaimExecutionRow struct {
@@ -403,7 +407,7 @@ type FailTaskClaimExecutionRow struct {
 }
 
 func (q *Queries) FailTaskClaimExecution(ctx context.Context, arg FailTaskClaimExecutionParams) (FailTaskClaimExecutionRow, error) {
-	row := q.db.QueryRow(ctx, failTaskClaimExecution, arg.ID, arg.MaxAttempts, arg.LastError)
+	row := q.db.QueryRow(ctx, failTaskClaimExecution, arg.ID, arg.AttemptCount, arg.LastError)
 	var i FailTaskClaimExecutionRow
 	err := row.Scan(
 		&i.ID,
@@ -556,6 +560,45 @@ type ReleaseTaskClaimExecutionRow struct {
 func (q *Queries) ReleaseTaskClaimExecution(ctx context.Context, id string) (ReleaseTaskClaimExecutionRow, error) {
 	row := q.db.QueryRow(ctx, releaseTaskClaimExecution, id)
 	var i ReleaseTaskClaimExecutionRow
+	err := row.Scan(
+		&i.ID,
+		&i.TaskItemID,
+		&i.AgentID,
+		&i.Status,
+		&i.ClaimReason,
+		&i.CreatedAt,
+		&i.EndedAt,
+	)
+	return i, err
+}
+
+const updateTaskClaimHeartbeat = `-- name: UpdateTaskClaimHeartbeat :one
+update task_claims
+set
+  last_heartbeat_at = now()
+where id = $1
+  and execution_lock_token = $2
+returning id, task_item_id, agent_id, status, claim_reason, created_at, ended_at
+`
+
+type UpdateTaskClaimHeartbeatParams struct {
+	ID                 string      `json:"id"`
+	ExecutionLockToken pgtype.Text `json:"execution_lock_token"`
+}
+
+type UpdateTaskClaimHeartbeatRow struct {
+	ID          string             `json:"id"`
+	TaskItemID  string             `json:"task_item_id"`
+	AgentID     string             `json:"agent_id"`
+	Status      string             `json:"status"`
+	ClaimReason pgtype.Text        `json:"claim_reason"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	EndedAt     pgtype.Timestamptz `json:"ended_at"`
+}
+
+func (q *Queries) UpdateTaskClaimHeartbeat(ctx context.Context, arg UpdateTaskClaimHeartbeatParams) (UpdateTaskClaimHeartbeatRow, error) {
+	row := q.db.QueryRow(ctx, updateTaskClaimHeartbeat, arg.ID, arg.ExecutionLockToken)
+	var i UpdateTaskClaimHeartbeatRow
 	err := row.Scan(
 		&i.ID,
 		&i.TaskItemID,
