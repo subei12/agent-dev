@@ -44,6 +44,8 @@ type ExecutorTaskInput struct {
 
 type Store interface {
 	GetClaimExecutionContext(context.Context, string) (ClaimExecutionContext, error)
+	AcquireClaimExecution(context.Context, string, string) (bool, error)
+	FailClaim(context.Context, string, string, int32) error
 	CompleteClaim(context.Context, string) error
 	CreateRun(context.Context, string, string) (Run, error)
 	CreateNodeRun(context.Context, string, string) (NodeRun, error)
@@ -59,11 +61,22 @@ type RunService struct {
 	launcher Launcher
 }
 
+const maxClaimExecutionAttempts int32 = 3
+
 func NewRunService(store Store, launcher Launcher) *RunService {
 	return &RunService{store: store, launcher: launcher}
 }
 
 func (s *RunService) ExecuteClaimedTask(ctx context.Context, claimID string) error {
+	lockToken := uuid.NewString()
+	acquired, err := s.store.AcquireClaimExecution(ctx, claimID, lockToken)
+	if err != nil {
+		return err
+	}
+	if !acquired {
+		return nil
+	}
+
 	execCtx, err := s.store.GetClaimExecutionContext(ctx, claimID)
 	if err != nil {
 		return err
@@ -86,6 +99,7 @@ func (s *RunService) ExecuteClaimedTask(ctx context.Context, claimID string) err
 		Args:              execCtx.Args,
 	}); err != nil {
 		_ = s.store.UpdateRunStatus(ctx, run.ID, "failed")
+		_ = s.store.FailClaim(ctx, claimID, err.Error(), maxClaimExecutionAttempts)
 		return err
 	}
 
@@ -125,6 +139,29 @@ func (r *Repository) GetClaimExecutionContext(ctx context.Context, claimID strin
 
 func (r *Repository) ListActiveClaimIDs(ctx context.Context) ([]string, error) {
 	return r.queries.ListActiveTaskClaimIDs(ctx)
+}
+
+func (r *Repository) AcquireClaimExecution(ctx context.Context, claimID, lockToken string) (bool, error) {
+	_, err := r.queries.AcquireTaskClaimExecution(ctx, sqlc.AcquireTaskClaimExecutionParams{
+		ID:                 claimID,
+		ExecutionLockToken: textValue(lockToken),
+	})
+	if err == nil {
+		return true, nil
+	}
+	if err.Error() == "no rows in result set" {
+		return false, nil
+	}
+	return false, err
+}
+
+func (r *Repository) FailClaim(ctx context.Context, claimID, lastError string, maxAttempts int32) error {
+	_, err := r.queries.FailTaskClaimExecution(ctx, sqlc.FailTaskClaimExecutionParams{
+		ID:          claimID,
+		MaxAttempts: maxAttempts,
+		LastError:   textValue(lastError),
+	})
+	return err
 }
 
 func (r *Repository) CompleteClaim(ctx context.Context, claimID string) error {

@@ -8,13 +8,27 @@ import (
 type fakeStore struct {
 	claimContext ClaimExecutionContext
 	runs         []Run
+	acquired     bool
+	completed    bool
+	failed       bool
 }
 
 func (f *fakeStore) GetClaimExecutionContext(context.Context, string) (ClaimExecutionContext, error) {
 	return f.claimContext, nil
 }
 
+func (f *fakeStore) AcquireClaimExecution(context.Context, string, string) (bool, error) {
+	f.acquired = true
+	return true, nil
+}
+
+func (f *fakeStore) FailClaim(context.Context, string, string, int32) error {
+	f.failed = true
+	return nil
+}
+
 func (f *fakeStore) CompleteClaim(context.Context, string) error {
+	f.completed = true
 	return nil
 }
 
@@ -32,11 +46,12 @@ func (f *fakeStore) UpdateRunStatus(context.Context, string, string) error { ret
 
 type fakeLauncher struct {
 	called bool
+	err    error
 }
 
 func (f *fakeLauncher) RunTask(context.Context, ExecutorTaskInput) error {
 	f.called = true
-	return nil
+	return f.err
 }
 
 func TestClaimedTaskCreatesRunAndExecutorSession(t *testing.T) {
@@ -59,7 +74,38 @@ func TestClaimedTaskCreatesRunAndExecutorSession(t *testing.T) {
 	if len(store.runs) != 1 {
 		t.Fatalf("expected 1 run, got %d", len(store.runs))
 	}
+	if !store.acquired {
+		t.Fatal("expected claim execution lock to be acquired")
+	}
+	if !store.completed {
+		t.Fatal("expected claim to be completed")
+	}
 	if !launcher.called {
 		t.Fatal("expected executor launcher to be called")
+	}
+}
+
+func TestClaimedTaskFailureMarksClaimForRetry(t *testing.T) {
+	store := &fakeStore{
+		claimContext: ClaimExecutionContext{
+			ClaimID:           "claim_1",
+			MissionID:         "mission_1",
+			TaskItemID:        "task_1",
+			AgentID:           "agent_1",
+			ExecutorProfileID: "exec_1",
+		},
+	}
+	launcher := &fakeLauncher{err: context.DeadlineExceeded}
+	svc := NewRunService(store, launcher)
+
+	err := svc.ExecuteClaimedTask(context.Background(), "claim_1")
+	if err == nil {
+		t.Fatal("expected launcher error")
+	}
+	if !store.failed {
+		t.Fatal("expected claim to be marked for retry/failure")
+	}
+	if store.completed {
+		t.Fatal("did not expect completed claim on launcher failure")
 	}
 }

@@ -100,7 +100,7 @@ func (r *Repository) CreateClaim(ctx context.Context, cmd ClaimTaskCmd) (TaskCla
 	if err != nil {
 		return TaskClaim{}, err
 	}
-	return claimFromRow(row), nil
+	return claimFromCreateRow(row), nil
 }
 
 func (r *Repository) CreateHandoff(ctx context.Context, cmd CreateHandoffCmd) (TaskHandoff, error) {
@@ -173,6 +173,17 @@ func itemFromRow(row sqlc.TaskItem) TaskItem {
 }
 
 func claimFromRow(row sqlc.TaskClaim) TaskClaim {
+	return TaskClaim{
+		ID:          row.ID,
+		TaskItemID:  row.TaskItemID,
+		AgentID:     row.AgentID,
+		Status:      row.Status,
+		ClaimReason: stringValue(row.ClaimReason),
+		CreatedAt:   row.CreatedAt.Time,
+	}
+}
+
+func claimFromCreateRow(row sqlc.CreateTaskClaimRow) TaskClaim {
 	return TaskClaim{
 		ID:          row.ID,
 		TaskItemID:  row.TaskItemID,
