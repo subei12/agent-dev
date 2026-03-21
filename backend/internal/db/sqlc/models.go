@@ -19,6 +19,20 @@ type Agent struct {
 	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
 }
 
+type AgentAdminPolicy struct {
+	ID                                      string             `json:"id"`
+	ProjectID                               string             `json:"project_id"`
+	RequirePlanAdoptionBeforeImplementation bool               `json:"require_plan_adoption_before_implementation"`
+	RequireTestCheckpointBeforeComplete     bool               `json:"require_test_checkpoint_before_complete"`
+	RequireReviewCheckpointBeforeComplete   bool               `json:"require_review_checkpoint_before_complete"`
+	AllowAutoCreateTasks                    bool               `json:"allow_auto_create_tasks"`
+	AllowAutoAssignTasks                    bool               `json:"allow_auto_assign_tasks"`
+	AllowAutoTriggerDownstream              bool               `json:"allow_auto_trigger_downstream"`
+	AllowCompleteWithOpenRisks              bool               `json:"allow_complete_with_open_risks"`
+	CreatedAt                               pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                               pgtype.Timestamptz `json:"updated_at"`
+}
+
 type AgentTeam struct {
 	ID          string             `json:"id"`
 	ProjectID   string             `json:"project_id"`
@@ -53,6 +67,43 @@ type ExecutorProfile struct {
 	AllowNetwork      bool               `json:"allow_network"`
 	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Mission struct {
+	ID            string             `json:"id"`
+	ProjectID     string             `json:"project_id"`
+	Title         string             `json:"title"`
+	Description   pgtype.Text        `json:"description"`
+	SourceType    string             `json:"source_type"`
+	Status        string             `json:"status"`
+	AdminAgentID  string             `json:"admin_agent_id"`
+	TeamID        pgtype.Text        `json:"team_id"`
+	RepoBindingID pgtype.Text        `json:"repo_binding_id"`
+	CreatedBy     string             `json:"created_by"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	CompletedAt   pgtype.Timestamptz `json:"completed_at"`
+}
+
+type MissionDecision struct {
+	ID                            string             `json:"id"`
+	MissionID                     string             `json:"mission_id"`
+	DecidedByAgentID              string             `json:"decided_by_agent_id"`
+	Decision                      string             `json:"decision"`
+	Summary                       string             `json:"summary"`
+	RelatedTaskItemID             pgtype.Text        `json:"related_task_item_id"`
+	RelatedDocumentVersionIdsJson []byte             `json:"related_document_version_ids_json"`
+	RelatedRepoCandidateIdsJson   []byte             `json:"related_repo_candidate_ids_json"`
+	CreatedAt                     pgtype.Timestamptz `json:"created_at"`
+}
+
+type MissionMember struct {
+	ID        string             `json:"id"`
+	MissionID string             `json:"mission_id"`
+	AgentID   string             `json:"agent_id"`
+	RoleKey   string             `json:"role_key"`
+	IsAdmin   bool               `json:"is_admin"`
+	JoinedAt  pgtype.Timestamptz `json:"joined_at"`
 }
 
 type Project struct {

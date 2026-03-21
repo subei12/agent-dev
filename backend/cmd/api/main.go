@@ -10,7 +10,10 @@ import (
 
 func main() {
 	cfg := platformconfig.MustLoad()
-	api := app.NewAPI(cfg)
+	api, err := app.NewAPI(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	log.Printf("api listening on %s", cfg.Addr)
 	if err := api.Run(context.Background()); err != nil {
