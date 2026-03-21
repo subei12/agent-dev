@@ -95,3 +95,27 @@ paths:
       responses:
         "201":
           description: Discussion round created
+  /api/projects/{projectId}/missions/{missionId}/task-board:
+    post:
+      summary: Create task board
+      responses:
+        "201":
+          description: Task board created
+  /api/projects/{projectId}/missions/{missionId}/tasks/{taskId}/claim:
+    post:
+      summary: Claim task
+      responses:
+        "201":
+          description: Task claimed
+  /api/projects/{projectId}/missions/{missionId}/tasks/{taskId}/handoffs:
+    post:
+      summary: Create task handoff
+      responses:
+        "201":
+          description: Task handoff created
+  /api/projects/{projectId}/missions/{missionId}/tasks/{taskId}/review-checkpoints:
+    post:
+      summary: Create review checkpoint
+      responses:
+        "201":
+          description: Review checkpoint created

@@ -150,6 +150,21 @@ type RepoBinding struct {
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 }
 
+type ReviewCheckpoint struct {
+	ID                           string             `json:"id"`
+	MissionID                    string             `json:"mission_id"`
+	TaskItemID                   pgtype.Text        `json:"task_item_id"`
+	Kind                         string             `json:"kind"`
+	RequestedByAgentID           string             `json:"requested_by_agent_id"`
+	AssignedAgentID              pgtype.Text        `json:"assigned_agent_id"`
+	Status                       string             `json:"status"`
+	Summary                      pgtype.Text        `json:"summary"`
+	LinkedDocumentVersionIdsJson []byte             `json:"linked_document_version_ids_json"`
+	LinkedRepoCandidateIdsJson   []byte             `json:"linked_repo_candidate_ids_json"`
+	CreatedAt                    pgtype.Timestamptz `json:"created_at"`
+	FinishedAt                   pgtype.Timestamptz `json:"finished_at"`
+}
+
 type Role struct {
 	ID              string             `json:"id"`
 	ProjectID       string             `json:"project_id"`
@@ -186,4 +201,56 @@ type SharedDocumentVersion struct {
 	ProducedByRunID   pgtype.Text        `json:"produced_by_run_id"`
 	SourceRoundID     pgtype.Text        `json:"source_round_id"`
 	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
+type TaskBoard struct {
+	ID        string             `json:"id"`
+	MissionID string             `json:"mission_id"`
+	Title     string             `json:"title"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type TaskClaim struct {
+	ID          string             `json:"id"`
+	TaskItemID  string             `json:"task_item_id"`
+	AgentID     string             `json:"agent_id"`
+	Status      string             `json:"status"`
+	ClaimReason pgtype.Text        `json:"claim_reason"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	EndedAt     pgtype.Timestamptz `json:"ended_at"`
+}
+
+type TaskHandoff struct {
+	ID                           string             `json:"id"`
+	TaskItemID                   string             `json:"task_item_id"`
+	FromAgentID                  string             `json:"from_agent_id"`
+	ToAgentID                    pgtype.Text        `json:"to_agent_id"`
+	ToAdminAgent                 bool               `json:"to_admin_agent"`
+	Summary                      string             `json:"summary"`
+	OutputDocumentVersionIdsJson []byte             `json:"output_document_version_ids_json"`
+	OutputRepoCandidateIdsJson   []byte             `json:"output_repo_candidate_ids_json"`
+	OutputArtifactVersionIdsJson []byte             `json:"output_artifact_version_ids_json"`
+	ValidationSummary            pgtype.Text        `json:"validation_summary"`
+	RiskSummary                  pgtype.Text        `json:"risk_summary"`
+	RecommendedNextAction        pgtype.Text        `json:"recommended_next_action"`
+	Status                       string             `json:"status"`
+	CreatedAt                    pgtype.Timestamptz `json:"created_at"`
+	DecidedAt                    pgtype.Timestamptz `json:"decided_at"`
+}
+
+type TaskItem struct {
+	ID                          string             `json:"id"`
+	BoardID                     string             `json:"board_id"`
+	Title                       string             `json:"title"`
+	Type                        string             `json:"type"`
+	Status                      string             `json:"status"`
+	AssignedAgentID             pgtype.Text        `json:"assigned_agent_id"`
+	UpstreamTaskIdsJson         []byte             `json:"upstream_task_ids_json"`
+	DownstreamTaskIdsJson       []byte             `json:"downstream_task_ids_json"`
+	InputDocumentVersionIdsJson []byte             `json:"input_document_version_ids_json"`
+	InputRepoCandidateIdsJson   []byte             `json:"input_repo_candidate_ids_json"`
+	DefinitionOfDoneJson        []byte             `json:"definition_of_done_json"`
+	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
 }
