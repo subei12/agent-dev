@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - v2-bootstrap
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: agent_platform
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/agent_platform?sslmode=disable
+      S3_ENDPOINT: http://localhost:9000
+      APP_ENV: test
+      APP_ADDR: :8080
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+
+      - name: Run migrations
+        run: go run github.com/pressly/goose/v3/cmd/goose@v3.24.1 -dir db/migrations postgres "$DATABASE_URL" up
+
+      - name: Run backend tests
+        working-directory: backend
+        run: go test ./...
+
+      - name: Run backend integration test
+        working-directory: backend
+        run: go test ./internal/project/... -tags=integration
+
+  frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Install Playwright browser
+        working-directory: frontend
+        run: corepack pnpm exec playwright install --with-deps chromium
+
+      - name: Run frontend typecheck
+        working-directory: frontend
+        run: corepack pnpm typecheck
+
+      - name: Run frontend e2e
+        working-directory: frontend
+        run: corepack pnpm test:e2e

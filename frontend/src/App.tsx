@@ -1,8 +1,7 @@
+import { RouterProvider } from "react-router-dom";
+
+import { router } from "./app/router";
+
 export default function App() {
-  return (
-    <main>
-      <h1>Multi-Agent Platform</h1>
-      <p>Platform bootstrap in progress.</p>
-    </main>
-  );
+  return <RouterProvider router={router} />;
 }

@@ -1,0 +1,35 @@
+import { RuntimeEvent } from "../../lib/api";
+
+const fallbackEvents: RuntimeEvent[] = [
+  { id: "event_1", title: "Session started", type: "session_started", category: "session", summary: "worker launched codex_cli" },
+  { id: "event_2", title: "Model output", type: "message_created", category: "model", summary: "assistant drafted runtime summary" },
+  { id: "event_3", title: "Waiting admin", type: "waiting_admin", category: "handoff", summary: "task completed without downstream" }
+];
+
+export function RuntimeEventTimeline({ events }: { events: RuntimeEvent[] }) {
+  const items = events.length > 0 ? events : fallbackEvents;
+
+  return (
+    <section className="panel">
+      <div className="panel-header">
+        <p className="panel-kicker">Runtime Events</p>
+        <span className="badge">{items.length} recent</span>
+      </div>
+      <div className="timeline">
+        {items.map((event) => (
+          <article key={event.id} className="timeline-item">
+            <div className="timeline-item__line" />
+            <div>
+              <div className="timeline-item__meta">
+                <span>{event.category}</span>
+                <span>{event.type}</span>
+              </div>
+              <h3>{event.title}</h3>
+              <p>{event.summary ?? "No summary supplied."}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
