@@ -19,6 +19,7 @@ func NewHandler(service Service) *Handler {
 // RegisterRoutes 实现当前函数行为。
 func (h *Handler) RegisterRoutes(r chi.Router) {
 	r.Get("/api/projects/{projectId}/approvals/{approvalId}", h.getApproval)
+	r.Get("/api/projects/{projectId}/missions/{missionId}/approvals", h.listApprovalsByMission)
 	r.Post("/api/projects/{projectId}/repo-candidates/{candidateId}/publish", h.publishCandidate)
 }
 
@@ -37,6 +38,16 @@ func (h *Handler) getApproval(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, approval)
+}
+
+// listApprovalsByMission 实现当前函数行为。
+func (h *Handler) listApprovalsByMission(w http.ResponseWriter, r *http.Request) {
+	approvals, err := h.service.ListByMission(r.Context(), chi.URLParam(r, "missionId"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, approvals)
 }
 
 // publishCandidate 实现当前函数行为。

@@ -11,6 +11,8 @@ import {
   createDocumentVersion,
   getDiscussionSessions,
   getDocumentVersions,
+  getMissionApprovals,
+  getMissionArchive,
   getMission,
   getMissionDocuments,
   getMissionRuntimes,
@@ -23,6 +25,8 @@ import { subscribeToChannel } from "../lib/sse";
 import { DiscussionSessionPanel } from "../features/discussions/discussion-session-panel";
 import { DocumentList } from "../features/documents/document-list";
 import { MissionActionRail } from "../features/missions/mission-action-rail";
+import { MissionApprovalPanel } from "../features/missions/mission-approval-panel";
+import { MissionArchivePanel } from "../features/missions/mission-archive-panel";
 import { MissionOverview } from "../features/missions/mission-overview";
 import { TaskBoard } from "../features/tasks/task-board";
 import { AgentRuntimeBoard } from "../features/runtime/agent-runtime-board";
@@ -54,6 +58,14 @@ export function MissionPage() {
   const runtimeQuery = useQuery({
     queryKey: ["mission-runtimes", missionId],
     queryFn: () => getMissionRuntimes(projectId, missionId)
+  });
+  const approvalQuery = useQuery({
+    queryKey: ["mission-approvals", missionId],
+    queryFn: () => getMissionApprovals(projectId, missionId)
+  });
+  const archiveQuery = useQuery({
+    queryKey: ["mission-archive", missionId],
+    queryFn: () => getMissionArchive(projectId, missionId)
   });
   const taskBoardQuery = useQuery({
     queryKey: ["mission-task-board", missionId],
@@ -122,6 +134,7 @@ export function MissionPage() {
     mutationFn: () => createArchive(projectId, missionId),
     onSuccess: (result) => {
       setArchiveStatus(result.archive.status);
+      void queryClient.invalidateQueries({ queryKey: ["mission-archive", missionId] });
     }
   });
   const versionsByDocument = Object.fromEntries(
@@ -132,6 +145,8 @@ export function MissionPage() {
     return subscribeToChannel(projectId, `mission:${missionId}`, () => {
       void queryClient.invalidateQueries({ queryKey: ["mission-runtimes", missionId] });
       void queryClient.invalidateQueries({ queryKey: ["mission-task-board", missionId] });
+      void queryClient.invalidateQueries({ queryKey: ["mission-approvals", missionId] });
+      void queryClient.invalidateQueries({ queryKey: ["mission-archive", missionId] });
     });
   }, [missionId, queryClient]);
 
@@ -153,6 +168,8 @@ export function MissionPage() {
         isArchiving={archiveMutation.isPending}
         onArchive={() => archiveMutation.mutate()}
       />
+      <MissionApprovalPanel approvals={approvalQuery.data ?? []} />
+      <MissionArchivePanel archive={archiveQuery.data ?? null} />
       <DocumentList
         documents={documentsQuery.data ?? []}
         isSubmitting={documentMutation.isPending || versionMutation.isPending || adoptMutation.isPending}

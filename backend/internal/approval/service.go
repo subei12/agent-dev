@@ -37,6 +37,7 @@ type CreateApprovalCmd struct {
 type Service interface {
 	Create(context.Context, CreateApprovalCmd) (Approval, error)
 	Get(context.Context, string) (Approval, error)
+	ListByMission(context.Context, string) ([]Approval, error)
 }
 
 type service struct {
@@ -84,6 +85,20 @@ func (s *service) Get(ctx context.Context, approvalID string) (Approval, error) 
 		return Approval{}, err
 	}
 	return approvalFromRow(row), nil
+}
+
+// ListByMission 返回当前 Mission 下的审批列表。
+func (s *service) ListByMission(ctx context.Context, missionID string) ([]Approval, error) {
+	rows, err := s.queries.ListApprovalsByMission(ctx, textValue(missionID))
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]Approval, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, approvalFromRow(row))
+	}
+	return items, nil
 }
 
 // approvalFromRow 实现当前函数行为。

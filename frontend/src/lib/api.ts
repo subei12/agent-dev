@@ -90,6 +90,21 @@ export type MissionArchiveResult = {
   };
 };
 
+export type MissionArchive = {
+  id: string;
+  missionId: string;
+  status: string;
+  manifestObjectKey?: string;
+  bundleObjectKey?: string;
+};
+
+export type ApprovalItem = {
+  id: string;
+  action: string;
+  subjectType: string;
+  status: string;
+};
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8080";
 const ACTOR_ID = "frontend-demo-user";
 
@@ -151,6 +166,22 @@ export async function getMissionRuntimes(projectId: string, missionId: string): 
     return await request<MissionRuntime[]>(`/api/projects/${projectId}/missions/${missionId}/agent-runtimes`);
   } catch {
     return [];
+  }
+}
+
+export async function getMissionApprovals(projectId: string, missionId: string): Promise<ApprovalItem[]> {
+  try {
+    return await request<ApprovalItem[]>(`/api/projects/${projectId}/missions/${missionId}/approvals`);
+  } catch {
+    return [];
+  }
+}
+
+export async function getMissionArchive(projectId: string, missionId: string): Promise<MissionArchive | null> {
+  try {
+    return await request<MissionArchive>(`/api/projects/${projectId}/missions/${missionId}/archive`);
+  } catch {
+    return null;
   }
 }
 

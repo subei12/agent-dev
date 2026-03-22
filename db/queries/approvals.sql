@@ -28,3 +28,9 @@ select id
 from approvals
 where mission_id = $1
 order by created_at desc;
+
+-- name: ListApprovalsByMission :many
+select id, mission_id, run_id, node_run_id, action, subject_type, subject_id, intent_snapshot_json, intent_hash, status, comment, created_by, decided_by, created_at, decided_at
+from approvals
+where mission_id = $1
+order by created_at desc;
