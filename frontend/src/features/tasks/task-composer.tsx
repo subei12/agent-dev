@@ -28,7 +28,7 @@ export function TaskComposer({ agents, onCreateTask, isSubmitting }: TaskCompose
   };
 
   return (
-    <section className="panel panel--feature task-composer-card">
+    <section className="task-composer-card">
       <div className="panel-header panel-header--compact">
         <p className="panel-kicker">新增任务</p>
         <span className="badge">快速创建</span>

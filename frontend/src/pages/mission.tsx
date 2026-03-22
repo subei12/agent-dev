@@ -204,25 +204,28 @@ export function MissionPage() {
 
   return (
     <PageShell
-      eyebrow="任务工作台"
+      eyebrow="Mission 工作台"
       title={missionQuery.data?.title ?? "任务作业空间"}
-      description="先推进任务，再查看文档、运行日志、审批和归档决策；所有高频动作都保留在第一屏附近。"
+      description="主区域优先处理任务看板和新增任务，右侧集中查看任务详情、Agent 执行和管理员决策。"
       aside={
-        <div className="hero-stat-grid hero-stat-grid--mission">
-          <div className="hero-stat">
-            <span>当前阶段</span>
-            <strong>{missionQuery.data ? formatStatusLabel(missionQuery.data.status) : "离线快照"}</strong>
-          </div>
-          <div className="hero-stat hero-stat--muted">
-            <span>当前任务</span>
-            <strong>{selectedTask?.title ?? "等待选择"}</strong>
-          </div>
+        <div className="hero-stat">
+          <span>当前阶段</span>
+          <strong>{missionQuery.data ? formatStatusLabel(missionQuery.data.status) : "离线快照"}</strong>
         </div>
       }
     >
       <MissionOverview mission={missionQuery.data ?? null} />
-      <div className="mission-workspace-grid">
+      <div className="mission-layout">
         <div className="workspace-column workspace-column--tasks">
+          <section className="panel mission-board-shell">
+            <div className="panel-header">
+              <p className="panel-kicker">任务看板</p>
+              <span className="badge">{taskBoardQuery.data?.items?.length ?? 0} 个任务</span>
+            </div>
+            <div className="mission-toolbar">
+              <div className="mission-toolbar__chip">当前任务：{selectedTask?.title ?? "等待选择"}</div>
+              <div className="mission-toolbar__chip">点击任务卡片后，在右侧查看详情与运行日志</div>
+            </div>
           <TaskComposer
             agents={agentsQuery.data ?? []}
             isSubmitting={taskMutation.isPending}
@@ -237,21 +240,11 @@ export function MissionPage() {
             onSendToAdmin={(taskId) => handoffMutation.mutate(taskId)}
             onRequestReview={(taskId) => checkpointMutation.mutate(taskId)}
           />
+          </section>
         </div>
 
-        <div className="workspace-column workspace-column--detail">
+        <div className="workspace-column workspace-column--detail mission-side-rail">
           <TaskDetailPanel task={selectedTask} documents={documentsQuery.data ?? []} />
-          <DocumentList
-            documents={documentsQuery.data ?? []}
-            isSubmitting={documentMutation.isPending || versionMutation.isPending || adoptMutation.isPending}
-            versionsByDocument={versionsByDocument}
-            onCreateDocument={(title, kind) => documentMutation.mutate({ title, kind })}
-            onCreateVersion={(documentId, contentText) => versionMutation.mutate({ documentId, contentText })}
-            onAdoptVersion={(documentId, versionId) => adoptMutation.mutate({ documentId, versionId })}
-          />
-        </div>
-
-        <div className="workspace-column workspace-column--support">
           <TaskRuntimePanel
             agents={agentsQuery.data ?? []}
             runtimes={runtimeItems}
@@ -261,11 +254,6 @@ export function MissionPage() {
             audits={sessionAuditsQuery.data ?? []}
             onSelectRuntime={(sessionId) => setSelectedSessionId(sessionId)}
           />
-          <DiscussionSessionPanel
-            sessions={sessionsQuery.data ?? []}
-            isSubmitting={discussionMutation.isPending}
-            onCreateSession={(topic) => discussionMutation.mutate(topic)}
-          />
           <MissionActionRail
             archiveStatus={archiveStatus}
             isArchiving={archiveMutation.isPending}
@@ -274,6 +262,21 @@ export function MissionPage() {
           <MissionApprovalPanel approvals={approvalQuery.data ?? []} />
           <MissionArchivePanel archive={archiveQuery.data ?? null} />
         </div>
+      </div>
+      <div className="mission-support-grid">
+        <DocumentList
+          documents={documentsQuery.data ?? []}
+          isSubmitting={documentMutation.isPending || versionMutation.isPending || adoptMutation.isPending}
+          versionsByDocument={versionsByDocument}
+          onCreateDocument={(title, kind) => documentMutation.mutate({ title, kind })}
+          onCreateVersion={(documentId, contentText) => versionMutation.mutate({ documentId, contentText })}
+          onAdoptVersion={(documentId, versionId) => adoptMutation.mutate({ documentId, versionId })}
+        />
+        <DiscussionSessionPanel
+          sessions={sessionsQuery.data ?? []}
+          isSubmitting={discussionMutation.isPending}
+          onCreateSession={(topic) => discussionMutation.mutate(topic)}
+        />
       </div>
     </PageShell>
   );

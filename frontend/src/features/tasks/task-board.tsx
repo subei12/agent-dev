@@ -38,67 +38,87 @@ export function TaskBoard({
 }: TaskBoardProps) {
   const items = tasks && tasks.length > 0 ? tasks : fallbackTasks;
   const groups = [
-    { key: "todo", label: "待开始" },
-    { key: "claimed", label: "已领取" },
-    { key: "in_progress", label: "进行中" },
-    { key: "handoff_pending", label: "等待交接" },
-    { key: "done", label: "已完成" },
-    { key: "review", label: "评审中" }
+    { key: "todo", label: "待开始", statuses: ["todo"] },
+    { key: "progress", label: "进行中", statuses: ["claimed", "in_progress", "handoff_pending"] },
+    { key: "review", label: "评审", statuses: ["review"] },
+    { key: "done", label: "已完成", statuses: ["done"] }
   ];
 
   return (
-    <section className="panel">
-      <div className="panel-header">
-        <p className="panel-kicker">任务看板</p>
-        <span className="badge">{items.length} 个任务</span>
-      </div>
+    <div className="task-board-shell">
       {taskActionMessage ? (
         <div className="empty-card">
           <strong>{taskActionMessage}</strong>
         </div>
       ) : null}
-      <div className="task-list-groups">
+      <div className="task-board-columns">
         {groups.map((group) => {
-          const groupItems = items.filter((task) => task.status === group.key);
-          if (groupItems.length === 0) return null;
+          const groupItems = items.filter((task) => group.statuses.includes(task.status));
 
           return (
-            <section key={group.key} className="task-group">
-              <div className="panel-header">
-                <p className="panel-kicker">{group.label}</p>
+            <section key={group.key} className="task-board-column">
+              <div className="task-column-header">
+                <strong>{group.label}</strong>
                 <span className="badge">{groupItems.length} 个</span>
               </div>
               <div className="stack">
-                {groupItems.map((task) => (
-                  <article
-                    key={task.id}
-                    className={selectedTaskId === task.id ? "task-list-item task-list-item--selected" : "task-list-item"}
-                    onClick={() => onSelectTask(task.id)}
-                  >
-                    <div className="task-card__meta">
-                      <span>{formatTypeLabel(task.type)}</span>
-                      <span>{formatStatusLabel(task.status)}</span>
-                    </div>
-                    <h3>{task.title}</h3>
-                    <p>{task.assignedAgentId ?? "未分配"}</p>
-                    <div className="task-actions">
-                      <button className="action-button" onClick={() => onClaimTask(task.id)} type="button">
-                        领取任务
-                      </button>
-                      <button className="action-button action-button--ghost" onClick={() => onSendToAdmin(task.id)} type="button">
-                        提交管理员
-                      </button>
-                      <button className="action-button action-button--ghost" onClick={() => onRequestReview(task.id)} type="button">
-                        请求评审
-                      </button>
-                    </div>
-                  </article>
-                ))}
+                {groupItems.length === 0 ? (
+                  <div className="empty-card task-column-empty">
+                    <strong>当前无任务</strong>
+                  </div>
+                ) : (
+                  groupItems.map((task) => (
+                    <article
+                      key={task.id}
+                      className={selectedTaskId === task.id ? "task-list-item task-list-item--selected" : "task-list-item"}
+                      onClick={() => onSelectTask(task.id)}
+                    >
+                      <div className="task-card__meta">
+                        <span>{formatTypeLabel(task.type)}</span>
+                        <span>{formatStatusLabel(task.status)}</span>
+                      </div>
+                      <h3>{task.title}</h3>
+                      <p>{task.assignedAgentId ?? "未分配 Agent"}</p>
+                      <div className="task-actions task-actions--compact">
+                        <button
+                          className="action-button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onClaimTask(task.id);
+                          }}
+                          type="button"
+                        >
+                          领取任务
+                        </button>
+                        <button
+                          className="action-button action-button--ghost"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onSendToAdmin(task.id);
+                          }}
+                          type="button"
+                        >
+                          提交管理员
+                        </button>
+                        <button
+                          className="action-button action-button--ghost"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onRequestReview(task.id);
+                          }}
+                          type="button"
+                        >
+                          请求评审
+                        </button>
+                      </div>
+                    </article>
+                  ))
+                )}
               </div>
             </section>
           );
         })}
       </div>
-    </section>
+    </div>
   );
 }

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import { PageShell } from "../components/page-shell";
 import { getMissions, getTaskBoard } from "../lib/api";
+import { formatStatusLabel, formatTypeLabel } from "../lib/display";
 import { MissionBoard } from "../features/missions/mission-board";
 
 const projectId = "proj_1";
@@ -27,65 +28,112 @@ export function HomePage() {
   const missionCount = missionsQuery.data?.length ?? 0;
   const totalTaskCount = Object.values(boardsByMission).reduce((count, board) => count + (board?.items?.length ?? 0), 0);
   const activeMissionCount = (missionsQuery.data ?? []).filter((mission) => mission.status !== "done").length;
+  const allTasks = (missionsQuery.data ?? []).flatMap((mission) =>
+    (boardsByMission[mission.id]?.items ?? []).map((task) => ({
+      ...task,
+      missionTitle: mission.title
+    }))
+  );
+  const reviewTaskCount = allTasks.filter((task) => task.status === "review" || task.status === "handoff_pending").length;
+  const spotlightMission = missionsQuery.data?.[0] ?? null;
+  const spotlightTasks = spotlightMission ? boardsByMission[spotlightMission.id]?.items ?? [] : [];
 
   return (
     <PageShell
-      eyebrow="平台总览"
-      title="多 Agent 协同控制台"
-      description="用更轻的工作台视图统一查看 Mission 进度、运行日志、共享文档和管理员决策入口。"
+      eyebrow="总任务看板"
+      title="任务指挥台"
+      description="首页先看整体任务脉冲，再快速进入具体 Mission 推进开发、评审和归档。"
       aside={
-        <div className="hero-stat-grid">
-          <div className="hero-stat">
-            <span>任务总数</span>
-            <strong>{totalTaskCount}</strong>
-          </div>
-          <div className="hero-stat">
-            <span>活跃 Mission</span>
-            <strong>{activeMissionCount}</strong>
-          </div>
-          <div className="hero-stat hero-stat--muted">
-            <span>项目状态</span>
-            <strong>{missionCount > 0 ? "协作中" : "等待初始化"}</strong>
-          </div>
+        <div className="hero-stat">
+          <span>任务总数</span>
+          <strong>{totalTaskCount}</strong>
         </div>
       }
     >
-      <section className="home-top-grid">
-        <article className="panel panel--feature panel--hero-callout">
-          <div className="panel-header panel-header--compact">
-            <p className="panel-kicker">今天的任务重心</p>
-            <span className="badge">首要入口</span>
+      <section className="dashboard-summary-grid">
+        <article className="panel summary-card">
+          <p className="panel-kicker">活跃 Mission</p>
+          <h2>{activeMissionCount}</h2>
+          <p className="panel-copy">仍在推进中的项目任务。</p>
+        </article>
+        <article className="panel summary-card">
+          <p className="panel-kicker">等待管理员</p>
+          <h2>{reviewTaskCount}</h2>
+          <p className="panel-copy">待评审或等待交接确认的任务。</p>
+        </article>
+        <article className="panel summary-card">
+          <p className="panel-kicker">项目状态</p>
+          <h2>{missionCount > 0 ? "协作中" : "待初始化"}</h2>
+          <p className="panel-copy">演示项目已接入真实任务、文档和运行日志。</p>
+        </article>
+      </section>
+      <section className="dashboard-main-grid">
+        <article className="panel dashboard-pulse">
+          <div className="panel-header">
+            <p className="panel-kicker">任务脉冲</p>
+            <span className="badge">{spotlightMission?.title ?? "暂无 Mission"}</span>
           </div>
-          <h2>先进入当前 Mission，再围绕任务推进、Agent 执行和文档产物完成协作。</h2>
+          <h2>{spotlightMission?.title ?? "当前没有可展示的 Mission"}</h2>
           <p className="panel-copy">
-            这里不再是平均铺开的后台卡片，而是一个强调主路径的工作入口。首页负责判断整体进度，Mission 页负责推进具体任务。
+            {spotlightMission?.description ?? "接入更多 Mission 后，这里会展示主任务的推进节奏。"}
           </p>
+          <div className="dashboard-progress-list">
+            {(missionsQuery.data ?? []).map((mission) => {
+              const missionTasks = boardsByMission[mission.id]?.items ?? [];
+              const completedCount = missionTasks.filter((task) => task.status === "done").length;
+              const progress = missionTasks.length > 0 ? Math.max(12, (completedCount / missionTasks.length) * 100) : 12;
+
+              return (
+                <div key={mission.id} className="dashboard-progress-row">
+                  <div>
+                    <strong>{mission.title}</strong>
+                    <p>{missionTasks.length} 个任务</p>
+                  </div>
+                  <div className="dashboard-progress-bar">
+                    <span style={{ width: `${progress}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
           <div className="action-row">
             <Link className="action-link" to="/missions/mission_1">
-              进入 Mission 工作台
+              进入工作台
             </Link>
-            <Link className="action-link action-link--ghost" to="/agents">
-              配置 Agent
+            <Link className="action-link action-link--ghost" to="/runtime/sessions/session_1">
+              查看运行日志
             </Link>
           </div>
         </article>
-        <article className="panel home-side-panel">
-          <div className="panel-header panel-header--compact">
-            <p className="panel-kicker">关键入口</p>
-            <span className="badge">运行与检查</span>
+
+        <article className="panel dashboard-side-card">
+          <div className="panel-header">
+            <p className="panel-kicker">最近动态</p>
+            <span className="badge">{allTasks.slice(0, 4).length} 条</span>
           </div>
           <div className="stack">
-            <div className="compact-card">
-              <strong>运行会话</strong>
-              <p>优先看结构化事件，必要时再展开 transcript。</p>
-              <Link className="inline-link" to="/runtime/sessions/session_1">
-                打开运行会话
-              </Link>
-            </div>
-            <div className="compact-card">
-              <strong>管理员决策</strong>
-              <p>Agent 配置、审批与归档状态集中放在辅助区，不再抢主任务视觉焦点。</p>
-            </div>
+            {allTasks.slice(0, 4).map((task) => (
+              <div key={task.id} className="compact-card">
+                <strong>{task.title}</strong>
+                <p>{task.missionTitle}</p>
+                <p>{task.assignedAgentId ?? "未分配"} · {formatStatusLabel(task.status)}</p>
+              </div>
+            ))}
+          </div>
+        </article>
+
+        <article className="panel dashboard-side-card">
+          <div className="panel-header">
+            <p className="panel-kicker">近期任务列表</p>
+            <span className="badge">{spotlightTasks.length} 个</span>
+          </div>
+          <div className="stack">
+            {spotlightTasks.slice(0, 4).map((task) => (
+              <div key={task.id} className="compact-card">
+                <strong>{task.title}</strong>
+                <p>{formatTypeLabel(task.type)} · {formatStatusLabel(task.status)}</p>
+              </div>
+            ))}
           </div>
         </article>
       </section>
