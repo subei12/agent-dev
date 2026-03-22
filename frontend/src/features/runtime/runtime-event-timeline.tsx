@@ -1,9 +1,10 @@
 import { RuntimeEvent } from "../../lib/api";
+import { formatTypeLabel } from "../../lib/display";
 
 const fallbackEvents: RuntimeEvent[] = [
-  { id: "event_1", title: "Session started", type: "session_started", category: "session", summary: "worker launched codex_cli" },
-  { id: "event_2", title: "Model output", type: "message_created", category: "model", summary: "assistant drafted runtime summary" },
-  { id: "event_3", title: "Waiting admin", type: "waiting_admin", category: "handoff", summary: "task completed without downstream" }
+  { id: "event_1", title: "会话已启动", type: "session_started", category: "session", summary: "worker 已启动 codex_cli" },
+  { id: "event_2", title: "模型输出", type: "message_created", category: "model", summary: "assistant 生成了运行摘要" },
+  { id: "event_3", title: "等待管理员", type: "waiting_admin", category: "handoff", summary: "任务完成但没有下游节点" }
 ];
 
 /**
@@ -15,8 +16,8 @@ export function RuntimeEventTimeline({ events }: { events: RuntimeEvent[] }) {
   return (
     <section className="panel">
       <div className="panel-header">
-        <p className="panel-kicker">Runtime Events</p>
-        <span className="badge">{items.length} recent</span>
+        <p className="panel-kicker">运行事件</p>
+        <span className="badge">{items.length} 条</span>
       </div>
       <div className="timeline">
         {items.map((event) => (
@@ -24,11 +25,11 @@ export function RuntimeEventTimeline({ events }: { events: RuntimeEvent[] }) {
             <div className="timeline-item__line" />
             <div>
               <div className="timeline-item__meta">
-                <span>{event.category}</span>
-                <span>{event.type}</span>
+                <span>{formatTypeLabel(event.category)}</span>
+                <span>{formatTypeLabel(event.type)}</span>
               </div>
               <h3>{event.title}</h3>
-              <p>{event.summary ?? "No summary supplied."}</p>
+              <p>{event.summary ?? "当前没有事件摘要。"}</p>
             </div>
           </article>
         ))}

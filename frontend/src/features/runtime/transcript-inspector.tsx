@@ -7,8 +7,8 @@ export function TranscriptInspector({ transcript }: { transcript: TranscriptView
   return (
     <section className="panel panel--transcript">
       <div className="panel-header">
-        <p className="panel-kicker">Transcript Inspector</p>
-        <span className="badge">{transcript?.transcript.status ?? "redacted view"}</span>
+        <p className="panel-kicker">转录查看器</p>
+        <span className="badge">{transcript?.transcript.status ?? "脱敏视图"}</span>
       </div>
       <div className="transcript-box">
         {transcript?.entries?.length ? (
@@ -18,13 +18,13 @@ export function TranscriptInspector({ transcript }: { transcript: TranscriptView
                 <span>{entry.role}</span>
                 <span>{entry.entryType}</span>
               </div>
-              <p>{entry.redactedText ?? "Structured content only."}</p>
+              <p>{entry.redactedText ?? "当前仅返回结构化内容。"}</p>
             </article>
           ))
         ) : (
           <div className="empty-card">
-            <strong>Transcript is hidden until requested.</strong>
-            <p>The default mission page shows structured events first and only expands raw dialogue on demand.</p>
+            <strong>当前未加载 transcript。</strong>
+            <p>默认优先展示结构化事件，只有在需要时才展开脱敏后的转录内容。</p>
           </div>
         )}
       </div>

@@ -6,7 +6,7 @@ test("mission workspace supports creating discussion, document, claiming task, a
   const sessions = [
     {
       id: "session_1",
-      topic: "Runtime observability scope",
+      topic: "运行态观测范围",
       status: "open"
     }
   ];
@@ -14,7 +14,7 @@ test("mission workspace supports creating discussion, document, claiming task, a
   const documents = [
     {
       id: "doc_1",
-      title: "Architecture Snapshot",
+      title: "架构快照",
       kind: "architecture",
       currentAdoptedVersionId: "docv_2"
     }
@@ -36,7 +36,7 @@ test("mission workspace supports creating discussion, document, claiming task, a
         status: "adopted",
         contentFormat: "md",
         contentHash: "hash-docv2",
-        contentText: "Adopted architecture"
+        contentText: "已采纳架构版本"
       }
     ]
   };
@@ -47,7 +47,7 @@ test("mission workspace supports creating discussion, document, claiming task, a
     items: [
       {
         id: "task_runtime",
-        title: "Implement runtime observability",
+        title: "实现运行态观测",
         type: "code",
         status: "todo",
         assignedAgentId: "agent_backend"
@@ -55,20 +55,20 @@ test("mission workspace supports creating discussion, document, claiming task, a
     ]
   };
 
-  let archiveStatus = "none";
+  let archiveStatus = "未归档";
 
-  await page.route("http://127.0.0.1:8080/api/projects/proj_1/missions/mission_1", async (route) => {
+  await page.route("**/api/projects/proj_1/missions/mission_1", async (route) => {
     await route.fulfill({
       json: {
         id: "mission_1",
-        title: "Seeded mission",
+        title: "演示任务",
         status: "implementation",
-        description: "Deliver the runtime telemetry dashboard."
+        description: "交付运行态观测工作台。"
       }
     });
   });
 
-  await page.route("http://127.0.0.1:8080/api/projects/proj_1/missions/mission_1/discussions", async (route) => {
+  await page.route("**/api/projects/proj_1/missions/mission_1/discussions", async (route) => {
     if (route.request().method() === "POST") {
       const body = JSON.parse(route.request().postData() ?? "{}");
       sessions.push({
@@ -86,7 +86,7 @@ test("mission workspace supports creating discussion, document, claiming task, a
     await route.fulfill({ json: sessions });
   });
 
-  await page.route("http://127.0.0.1:8080/api/projects/proj_1/missions/mission_1/documents", async (route) => {
+  await page.route("**/api/projects/proj_1/missions/mission_1/documents", async (route) => {
     if (route.request().method() === "POST") {
       const body = JSON.parse(route.request().postData() ?? "{}");
       documents.push({
@@ -106,7 +106,7 @@ test("mission workspace supports creating discussion, document, claiming task, a
   });
 
   await page.route(
-    /http:\/\/127\.0\.0\.1:8080\/api\/projects\/proj_1\/missions\/mission_1\/documents\/([^/]+)\/versions/,
+    new RegExp(".*/api/projects/proj_1/missions/mission_1/documents/([^/]+)/versions"),
     async (route) => {
       const documentId = route.request().url().split("/documents/")[1].split("/versions")[0];
 
@@ -137,7 +137,7 @@ test("mission workspace supports creating discussion, document, claiming task, a
   );
 
   await page.route(
-    /http:\/\/127\.0\.0\.1:8080\/api\/projects\/proj_1\/missions\/mission_1\/documents\/([^/]+)\/adopt/,
+    new RegExp(".*/api/projects/proj_1/missions/mission_1/documents/([^/]+)/adopt"),
     async (route) => {
       const documentId = route.request().url().split("/documents/")[1].split("/adopt")[0];
       const body = JSON.parse(route.request().postData() ?? "{}");
@@ -158,11 +158,11 @@ test("mission workspace supports creating discussion, document, claiming task, a
     }
   );
 
-  await page.route("http://127.0.0.1:8080/api/projects/proj_1/missions/mission_1/task-board", async (route) => {
+  await page.route("**/api/projects/proj_1/missions/mission_1/task-board", async (route) => {
     await route.fulfill({ json: taskBoard });
   });
 
-  await page.route("http://127.0.0.1:8080/api/projects/proj_1/missions/mission_1/tasks/task_runtime/claim", async (route) => {
+  await page.route("**/api/projects/proj_1/missions/mission_1/tasks/task_runtime/claim", async (route) => {
     taskBoard.items[0].status = "claimed";
     await route.fulfill({
       status: 201,
@@ -175,7 +175,7 @@ test("mission workspace supports creating discussion, document, claiming task, a
     });
   });
 
-  await page.route("http://127.0.0.1:8080/api/projects/proj_1/missions/mission_1/tasks/task_runtime/handoffs", async (route) => {
+  await page.route("**/api/projects/proj_1/missions/mission_1/tasks/task_runtime/handoffs", async (route) => {
     taskBoard.items[0].status = "handoff_pending";
     await route.fulfill({
       status: 201,
@@ -189,7 +189,7 @@ test("mission workspace supports creating discussion, document, claiming task, a
   });
 
   await page.route(
-    "http://127.0.0.1:8080/api/projects/proj_1/missions/mission_1/tasks/task_runtime/review-checkpoints",
+    "**/api/projects/proj_1/missions/mission_1/tasks/task_runtime/review-checkpoints",
     async (route) => {
       await route.fulfill({
         status: 201,
@@ -202,7 +202,7 @@ test("mission workspace supports creating discussion, document, claiming task, a
     }
   );
 
-  await page.route("http://127.0.0.1:8080/api/projects/proj_1/missions/mission_1/archive", async (route) => {
+  await page.route("**/api/projects/proj_1/missions/mission_1/archive", async (route) => {
     if (route.request().method() === "POST") {
       archiveStatus = "uploaded";
       await route.fulfill({
@@ -231,37 +231,37 @@ test("mission workspace supports creating discussion, document, claiming task, a
     });
   });
 
-  await page.route("http://127.0.0.1:8080/api/projects/proj_1/missions/mission_1/agent-runtimes", async (route) => {
+  await page.route("**/api/projects/proj_1/missions/mission_1/agent-runtimes", async (route) => {
     await route.fulfill({ json: [] });
   });
 
   await page.goto("/missions/mission_1");
 
-  await page.getByLabel("Discussion topic").fill("Admin review loop");
-  await page.getByRole("button", { name: "Start Discussion" }).click();
-  await expect(page.getByText("Admin review loop")).toBeVisible();
+  await page.getByLabel("讨论主题").fill("管理员复核流程");
+  await page.getByRole("button", { name: "发起讨论" }).click();
+  await expect(page.getByText("管理员复核流程")).toBeVisible();
 
-  await page.getByLabel("Document title").fill("Test Strategy");
-  await page.getByRole("button", { name: "Add Document" }).click();
-  await expect(page.getByRole("heading", { name: "Test Strategy" })).toBeVisible();
+  await page.getByLabel("文档标题").fill("测试策略");
+  await page.getByRole("button", { name: "新建文档" }).click();
+  await expect(page.getByRole("heading", { name: "测试策略" })).toBeVisible();
 
-  await page.getByLabel("Version content for Architecture Snapshot").fill("Version 3 draft");
-  await page.getByRole("button", { name: "Save Version" }).first().click();
-  await expect(page.getByText("Version 3 draft")).toBeVisible();
-  await page.getByRole("button", { name: "Adopt Version" }).last().click();
-  await expect(page.getByText("adopted", { exact: true })).toBeVisible();
+  await page.getByLabel("架构快照 的版本内容").fill("版本 3 草稿");
+  await page.getByRole("button", { name: "保存版本" }).first().click();
+  await expect(page.getByText("版本 3 草稿")).toBeVisible();
+  await page.getByRole("button", { name: "采纳版本" }).last().click();
+  await expect(page.getByText("已采纳", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "Claim Task" }).click();
-  await expect(page.getByText("Task claimed", { exact: true })).toBeVisible();
-  await expect(page.getByText("claimed", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "领取任务" }).click();
+  await expect(page.getByText("任务已领取", { exact: true })).toBeVisible();
+  await expect(page.getByText("已领取", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "Send To Admin" }).click();
-  await expect(page.getByText("Task handed to admin", { exact: true })).toBeVisible();
-  await expect(page.getByText("handoff_pending", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "提交管理员" }).click();
+  await expect(page.getByText("任务已提交给管理员", { exact: true })).toBeVisible();
+  await expect(page.getByText("等待交接", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "Request Review" }).click();
-  await expect(page.getByText("Checkpoint requested")).toBeVisible();
+  await page.getByRole("button", { name: "请求评审" }).click();
+  await expect(page.getByText("已发起检查点")).toBeVisible();
 
-  await page.getByRole("button", { name: "Archive Mission" }).click();
-  await expect(page.getByText("Archive status: uploaded")).toBeVisible();
+  await page.getByRole("button", { name: "归档任务" }).click();
+  await expect(page.getByText("归档状态：已上传")).toBeVisible();
 });

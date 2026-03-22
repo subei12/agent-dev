@@ -1,3 +1,5 @@
+import { formatStatusLabel } from "../../lib/display";
+
 type MissionActionRailProps = {
   archiveStatus: string;
   onArchive: () => void;
@@ -11,16 +13,16 @@ export function MissionActionRail({ archiveStatus, onArchive, isArchiving }: Mis
   return (
     <section className="panel">
       <div className="panel-header">
-        <p className="panel-kicker">Mission Actions</p>
-        <span className="badge">admin controls</span>
+        <p className="panel-kicker">任务操作</p>
+        <span className="badge">管理员操作</span>
       </div>
       <div className="stack">
         <div className="empty-card">
-          <strong>Archive status: {archiveStatus}</strong>
-          <p>Archive the current mission package once the admin agent is satisfied with the latest artifacts.</p>
+          <strong>归档状态：{formatStatusLabel(archiveStatus)}</strong>
+          <p>当管理员确认当前文档、任务和运行结果满足要求后，可在这里触发归档。</p>
         </div>
         <button className="action-button" onClick={onArchive} disabled={isArchiving} type="button">
-          Archive Mission
+          归档任务
         </button>
       </div>
     </section>

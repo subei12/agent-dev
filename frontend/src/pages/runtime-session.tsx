@@ -47,13 +47,13 @@ export function RuntimeSessionPage() {
 
   return (
     <PageShell
-      eyebrow="Session Inspector"
-      title={sessionQuery.data?.backend ? `Runtime Session · ${sessionQuery.data.backend}` : "Runtime Session Inspector"}
-      description="Structured events stay primary. Redacted transcript expands underneath when someone needs the actual model dialogue."
+      eyebrow="运行会话"
+      title={sessionQuery.data?.backend ? `运行会话 · ${sessionQuery.data.backend}` : "运行会话详情"}
+      description="优先展示结构化事件，必要时再查看脱敏后的 transcript 和访问审计。"
       aside={
         <div className="hero-stat">
-          <span>Status</span>
-          <strong>{sessionQuery.data?.status ?? "offline snapshot"}</strong>
+          <span>状态</span>
+          <strong>{sessionQuery.data?.status ?? "离线快照"}</strong>
         </div>
       }
     >

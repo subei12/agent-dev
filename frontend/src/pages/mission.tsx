@@ -41,7 +41,7 @@ export function MissionPage() {
   const { missionId = "mission_1" } = useParams();
   const queryClient = useQueryClient();
   const [taskActionMessage, setTaskActionMessage] = useState("");
-  const [archiveStatus, setArchiveStatus] = useState("not archived");
+  const [archiveStatus, setArchiveStatus] = useState("未归档");
 
   const missionQuery = useQuery({
     queryKey: ["mission", missionId],
@@ -110,7 +110,7 @@ export function MissionPage() {
   const claimMutation = useMutation({
     mutationFn: (taskId: string) => claimTask(projectId, missionId, taskId),
     onSuccess: async () => {
-      setTaskActionMessage("Task claimed");
+      setTaskActionMessage("任务已领取");
       await queryClient.invalidateQueries({ queryKey: ["mission-task-board", missionId] });
     }
   });
@@ -118,7 +118,7 @@ export function MissionPage() {
   const handoffMutation = useMutation({
     mutationFn: (taskId: string) => sendTaskToAdmin(projectId, missionId, taskId),
     onSuccess: async () => {
-      setTaskActionMessage("Task handed to admin");
+      setTaskActionMessage("任务已提交给管理员");
       await queryClient.invalidateQueries({ queryKey: ["mission-task-board", missionId] });
     }
   });
@@ -126,7 +126,7 @@ export function MissionPage() {
   const checkpointMutation = useMutation({
     mutationFn: (taskId: string) => requestReviewCheckpoint(projectId, missionId, taskId),
     onSuccess: () => {
-      setTaskActionMessage("Checkpoint requested");
+      setTaskActionMessage("已发起检查点");
     }
   });
 
@@ -152,12 +152,12 @@ export function MissionPage() {
 
   return (
     <PageShell
-      eyebrow="Mission Workspace"
-      title="Documents, task lanes, and runtime telemetry"
-      description="This workspace keeps the formal artifacts and live execution view on one surface so the admin agent can judge completion without leaving the page."
+      eyebrow="Mission 工作台"
+      title="文档、任务流转与运行态观测"
+      description="把正式文档、任务流转、审批状态和运行日志放在同一个页面里，方便管理员 Agent 做判断。"
       aside={
         <div className="hero-stat">
-          <span>Workspace</span>
+          <span>工作区</span>
           <strong>{missionId}</strong>
         </div>
       }

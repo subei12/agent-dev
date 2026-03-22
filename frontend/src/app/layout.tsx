@@ -1,9 +1,9 @@
 import { NavLink, Outlet } from "react-router-dom";
 
 const navItems = [
-  { to: "/", label: "Missions" },
-  { to: "/missions/mission_1", label: "Workspace" },
-  { to: "/runtime/sessions/session_1", label: "Runtime" }
+  { to: "/", label: "首页" },
+  { to: "/missions/mission_1", label: "工作台" },
+  { to: "/runtime/sessions/session_1", label: "运行态" }
 ];
 
 /**
@@ -15,10 +15,9 @@ export function AppLayout() {
       <aside className="sidebar">
         <div className="brand-block">
           <p className="brand-kicker">Agent Platform v2</p>
-          <h1>Mission Control</h1>
+          <h1>任务指挥台</h1>
           <p className="brand-copy">
-            Editorial command deck for discussions, code handoffs, runtime telemetry, and final archive
-            decisions.
+            围绕讨论、文档、任务接力、运行态观测和归档决策组织起来的多 Agent 开发平台。
           </p>
         </div>
 
@@ -35,8 +34,8 @@ export function AppLayout() {
         </nav>
 
         <div className="status-ribbon">
-          <span>Live</span>
-          <strong>SSE + Transcript</strong>
+          <span>在线</span>
+          <strong>SSE + 转录记录</strong>
         </div>
       </aside>
 

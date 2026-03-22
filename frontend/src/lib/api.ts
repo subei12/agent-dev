@@ -105,7 +105,7 @@ export type ApprovalItem = {
   status: string;
 };
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8080";
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 const ACTOR_ID = "frontend-demo-user";
 
 async function request<T>(path: string): Promise<T> {
@@ -359,7 +359,7 @@ export function requestReviewCheckpoint(projectId: string, missionId: string, ta
       kind: "doc_review",
       requestedByAgentId: "agent_admin",
       assignedAgentId: "agent_admin",
-      summary: "Checkpoint requested from mission workspace."
+      summary: "从 Mission 工作台发起检查点。"
     }
   );
 }

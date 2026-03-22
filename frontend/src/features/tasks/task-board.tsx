@@ -1,3 +1,5 @@
+import { formatStatusLabel, formatTypeLabel } from "../../lib/display";
+
 type TaskCard = {
   id: string;
   title: string;
@@ -15,9 +17,9 @@ type TaskBoardProps = {
 };
 
 const fallbackTasks: TaskCard[] = [
-  { id: "task-design", title: "Converge architecture notes", type: "design", status: "done", assignedAgentId: "agent_admin" },
-  { id: "task-code", title: "Implement runtime observability service", type: "code", status: "in_progress", assignedAgentId: "agent_backend" },
-  { id: "task-review", title: "Review transcript access policy", type: "review", status: "todo", assignedAgentId: "agent_reviewer" }
+  { id: "task-design", title: "收敛架构文档", type: "design", status: "done", assignedAgentId: "agent_admin" },
+  { id: "task-code", title: "实现运行态观测服务", type: "code", status: "in_progress", assignedAgentId: "agent_backend" },
+  { id: "task-review", title: "评审 transcript 访问策略", type: "review", status: "todo", assignedAgentId: "agent_reviewer" }
 ];
 
 /**
@@ -35,8 +37,8 @@ export function TaskBoard({
   return (
     <section className="panel">
       <div className="panel-header">
-        <p className="panel-kicker">Task Board</p>
-        <span className="badge">{items.length} active lanes</span>
+        <p className="panel-kicker">任务看板</p>
+        <span className="badge">{items.length} 个任务</span>
       </div>
       {taskActionMessage ? (
         <div className="empty-card">
@@ -47,20 +49,20 @@ export function TaskBoard({
         {items.map((task) => (
           <article key={task.id} className="task-card">
             <div className="task-card__meta">
-              <span>{task.type}</span>
-              <span>{task.status}</span>
+              <span>{formatTypeLabel(task.type)}</span>
+              <span>{formatStatusLabel(task.status)}</span>
             </div>
             <h3>{task.title}</h3>
-            <p>{task.assignedAgentId ?? "unassigned"}</p>
+            <p>{task.assignedAgentId ?? "未分配"}</p>
             <div className="task-actions">
               <button className="action-button" onClick={() => onClaimTask(task.id)} type="button">
-                Claim Task
+                领取任务
               </button>
               <button className="action-button action-button--ghost" onClick={() => onSendToAdmin(task.id)} type="button">
-                Send To Admin
+                提交管理员
               </button>
               <button className="action-button action-button--ghost" onClick={() => onRequestReview(task.id)} type="button">
-                Request Review
+                请求评审
               </button>
             </div>
           </article>

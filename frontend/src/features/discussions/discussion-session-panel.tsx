@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 
 import { DiscussionSession } from "../../lib/api";
+import { formatStatusLabel } from "../../lib/display";
 
 type DiscussionSessionPanelProps = {
   sessions: DiscussionSession[];
@@ -26,29 +27,29 @@ export function DiscussionSessionPanel({ sessions, onCreateSession, isSubmitting
   return (
     <section className="panel">
       <div className="panel-header">
-        <p className="panel-kicker">Discussion Rounds</p>
-        <span className="badge">{sessions.length} sessions</span>
+        <p className="panel-kicker">讨论轮次</p>
+        <span className="badge">{sessions.length} 条会话</span>
       </div>
       <form className="inline-form" onSubmit={handleSubmit}>
         <label className="field">
-          <span>Discussion topic</span>
+          <span>讨论主题</span>
           <input value={topic} onChange={(event) => setTopic(event.target.value)} />
         </label>
         <button className="action-button" disabled={isSubmitting} type="submit">
-          Start Discussion
+          发起讨论
         </button>
       </form>
       <div className="stack">
         {sessions.length === 0 ? (
           <div className="empty-card">
-            <strong>No discussion sessions loaded.</strong>
-            <p>The shell still reserves the section so agent review flows have a stable home.</p>
+            <strong>当前还没有讨论会话。</strong>
+            <p>创建第一轮讨论后，这里会展示各轮讨论的主题和状态。</p>
           </div>
         ) : (
           sessions.map((session) => (
             <article key={session.id} className="list-card">
               <h3>{session.topic}</h3>
-              <p>{session.status}</p>
+              <p>{formatStatusLabel(session.status)}</p>
             </article>
           ))
         )}

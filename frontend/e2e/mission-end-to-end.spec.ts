@@ -1,23 +1,23 @@
 import { expect, test } from "@playwright/test";
 
 test("mission workspace renders seeded api data and runtime transcript", async ({ page }) => {
-  await page.route("http://127.0.0.1:8080/api/projects/proj_1/missions/mission_1", async (route) => {
+  await page.route("**/api/projects/proj_1/missions/mission_1", async (route) => {
     await route.fulfill({
       json: {
         id: "mission_1",
-        title: "Seeded mission",
+        title: "演示任务",
         status: "implementation",
-        description: "Deliver the runtime telemetry dashboard."
+        description: "交付运行态观测工作台。"
       }
     });
   });
 
-  await page.route("http://127.0.0.1:8080/api/projects/proj_1/missions/mission_1/documents", async (route) => {
+  await page.route("**/api/projects/proj_1/missions/mission_1/documents", async (route) => {
     await route.fulfill({
       json: [
         {
           id: "doc_1",
-          title: "Architecture Snapshot",
+          title: "架构快照",
           kind: "architecture",
           currentAdoptedVersionId: "docv_2"
         }
@@ -25,33 +25,33 @@ test("mission workspace renders seeded api data and runtime transcript", async (
     });
   });
 
-  await page.route("http://127.0.0.1:8080/api/projects/proj_1/missions/mission_1/discussions", async (route) => {
+  await page.route("**/api/projects/proj_1/missions/mission_1/discussions", async (route) => {
     await route.fulfill({
       json: [
         {
           id: "session_1",
-          topic: "Runtime observability scope",
+          topic: "运行态观测范围",
           status: "open"
         }
       ]
     });
   });
 
-  await page.route("http://127.0.0.1:8080/api/projects/proj_1/missions/mission_1/agent-runtimes", async (route) => {
+  await page.route("**/api/projects/proj_1/missions/mission_1/agent-runtimes", async (route) => {
     await route.fulfill({
       json: [
         {
           id: "runtime_1",
           agentId: "agent_backend",
           status: "working",
-          statusSummary: "streaming codex session",
+          statusSummary: "正在输出 codex 会话",
           currentExecutorSessionId: "session_telemetry"
         }
       ]
     });
   });
 
-  await page.route("http://127.0.0.1:8080/api/projects/proj_1/missions/mission_1/task-board", async (route) => {
+  await page.route("**/api/projects/proj_1/missions/mission_1/task-board", async (route) => {
     await route.fulfill({
       json: {
         id: "board_1",
@@ -59,7 +59,7 @@ test("mission workspace renders seeded api data and runtime transcript", async (
         items: [
           {
             id: "task_runtime",
-            title: "Implement runtime observability",
+            title: "实现运行态观测",
             type: "code",
             status: "handoff_pending",
             assignedAgentId: "agent_backend"
@@ -69,7 +69,7 @@ test("mission workspace renders seeded api data and runtime transcript", async (
     });
   });
 
-  await page.route("http://127.0.0.1:8080/api/projects/proj_1/executor-sessions/session_1", async (route) => {
+  await page.route("**/api/projects/proj_1/executor-sessions/session_1", async (route) => {
     await route.fulfill({
       json: {
         id: "session_1",
@@ -79,21 +79,21 @@ test("mission workspace renders seeded api data and runtime transcript", async (
     });
   });
 
-  await page.route("http://127.0.0.1:8080/api/projects/proj_1/executor-sessions/session_1/events", async (route) => {
+  await page.route("**/api/projects/proj_1/executor-sessions/session_1/events", async (route) => {
     await route.fulfill({
       json: [
         {
           id: "event_1",
-          title: "Session started",
+          title: "会话已启动",
           type: "session_started",
           category: "session",
-          summary: "worker launched codex_cli"
+          summary: "worker 已启动 codex_cli"
         }
       ]
     });
   });
 
-  await page.route("http://127.0.0.1:8080/api/projects/proj_1/executor-sessions/session_1/transcript?view=redacted", async (route) => {
+  await page.route("**/api/projects/proj_1/executor-sessions/session_1/transcript?view=redacted", async (route) => {
     await route.fulfill({
       json: {
         transcript: {
@@ -106,21 +106,21 @@ test("mission workspace renders seeded api data and runtime transcript", async (
             id: "entry_1",
             role: "assistant",
             entryType: "message",
-            redactedText: "Drafted runtime summary for admin review."
+            redactedText: "已为管理员生成运行摘要。"
           }
         ]
       }
     });
   });
 
-  await page.route("http://127.0.0.1:8080/api/projects/proj_1/executor-sessions/session_1/access-audits", async (route) => {
+  await page.route("**/api/projects/proj_1/executor-sessions/session_1/access-audits", async (route) => {
     await route.fulfill({
       json: [
         {
           id: "audit_1",
           actorUserId: "demo-admin",
           accessMode: "redacted_transcript",
-          reason: "review transcript"
+          reason: "审阅转录"
         }
       ]
     });
@@ -128,15 +128,15 @@ test("mission workspace renders seeded api data and runtime transcript", async (
 
   await page.goto("/missions/mission_1");
 
-  await expect(page.getByText("Seeded mission")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Architecture Snapshot" })).toBeVisible();
-  await expect(page.getByText("Runtime observability scope")).toBeVisible();
-  await expect(page.getByText("streaming codex session")).toBeVisible();
-  await expect(page.getByText("Implement runtime observability")).toBeVisible();
+  await expect(page.getByText("演示任务")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "架构快照" })).toBeVisible();
+  await expect(page.getByText("运行态观测范围")).toBeVisible();
+  await expect(page.getByText("正在输出 codex 会话")).toBeVisible();
+  await expect(page.getByText("实现运行态观测")).toBeVisible();
 
   await page.goto("/runtime/sessions/session_1");
 
-  await expect(page.getByText("Runtime Session · codex_cli")).toBeVisible();
-  await expect(page.getByText("Drafted runtime summary for admin review.")).toBeVisible();
+  await expect(page.getByText("运行会话 · codex_cli")).toBeVisible();
+  await expect(page.getByText("已为管理员生成运行摘要。")).toBeVisible();
   await expect(page.getByText("demo-admin")).toBeVisible();
 });

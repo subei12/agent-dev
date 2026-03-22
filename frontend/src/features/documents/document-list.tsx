@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 
 import { DocumentItem, DocumentVersion } from "../../lib/api";
+import { formatStatusLabel, formatTypeLabel } from "../../lib/display";
 
 type DocumentListProps = {
   documents: DocumentItem[];
@@ -38,43 +39,43 @@ export function DocumentList({
   return (
     <section className="panel">
       <div className="panel-header">
-        <p className="panel-kicker">Documents</p>
-        <span className="badge">{documents.length} tracked</span>
+        <p className="panel-kicker">文档</p>
+        <span className="badge">{documents.length} 份</span>
       </div>
       <form className="inline-form inline-form--wide" onSubmit={handleSubmit}>
         <label className="field">
-          <span>Document title</span>
+          <span>文档标题</span>
           <input value={title} onChange={(event) => setTitle(event.target.value)} />
         </label>
         <label className="field field--compact">
-          <span>Document kind</span>
+          <span>文档类型</span>
           <select value={kind} onChange={(event) => setKind(event.target.value)}>
-            <option value="architecture">architecture</option>
-            <option value="implementation_plan">implementation_plan</option>
-            <option value="review_report">review_report</option>
+            <option value="architecture">架构文档</option>
+            <option value="implementation_plan">实施计划</option>
+            <option value="review_report">评审报告</option>
           </select>
         </label>
         <button className="action-button" disabled={isSubmitting} type="submit">
-          Add Document
+          新建文档
         </button>
       </form>
       <div className="stack">
         {documents.length === 0 ? (
           <div className="empty-card">
-            <strong>No adopted documents yet.</strong>
-            <p>Architecture, implementation plans, and review reports will appear here once the API serves them.</p>
+            <strong>当前还没有已采纳文档。</strong>
+            <p>架构文档、实施计划和评审报告会在这里统一展示。</p>
           </div>
         ) : (
           documents.map((document) => (
             <article key={document.id} className="list-card">
               <div className="list-card__meta">
-                <span>{document.kind}</span>
-                <span>{document.currentAdoptedVersionId ?? "draft"}</span>
+                <span>{formatTypeLabel(document.kind)}</span>
+                <span>{document.currentAdoptedVersionId ?? "草稿"}</span>
               </div>
               <h3>{document.title}</h3>
               <div className="stack">
                 <label className="field">
-                  <span>{`Version content for ${document.title}`}</span>
+                  <span>{`${document.title} 的版本内容`}</span>
                   <textarea
                     className="field-textarea"
                     value={versionDrafts[document.id] ?? ""}
@@ -103,7 +104,7 @@ export function DocumentList({
                       }));
                     }}
                   >
-                    Save Version
+                    保存版本
                   </button>
                 </div>
                 <div className="stack">
@@ -111,7 +112,7 @@ export function DocumentList({
                     <div key={version.id} className="version-card">
                       <div className="list-card__meta">
                         <span>{`v${version.version}`}</span>
-                        <span>{version.status}</span>
+                        <span>{formatStatusLabel(version.status)}</span>
                       </div>
                       <p>{version.contentText}</p>
                       {version.status !== "adopted" ? (
@@ -121,7 +122,7 @@ export function DocumentList({
                           type="button"
                           onClick={() => onAdoptVersion(document.id, version.id)}
                         >
-                          Adopt Version
+                          采纳版本
                         </button>
                       ) : null}
                     </div>
