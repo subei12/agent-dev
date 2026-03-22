@@ -2,8 +2,8 @@ import { NavLink, Outlet } from "react-router-dom";
 
 const navItems = [
   { to: "/", label: "首页" },
-  { to: "/missions/mission_1", label: "工作台" },
-  { to: "/runtime/sessions/session_1", label: "运行态" },
+  { to: "/missions/mission_1", label: "Mission" },
+  { to: "/runtime/sessions/session_1", label: "运行会话" },
   { to: "/agents", label: "Agent 配置" }
 ];
 
@@ -12,33 +12,33 @@ const navItems = [
  */
 export function AppLayout() {
   return (
-    <div className="app-frame">
-      <aside className="sidebar">
-        <div className="brand-block">
+    <div className="app-shell">
+      <header className="topbar">
+        <div className="topbar__brand">
           <p className="brand-kicker">Agent Platform v2</p>
-          <h1>任务指挥台</h1>
-          <p className="brand-copy">
-            围绕讨论、文档、任务接力、运行态观测和归档决策组织起来的多 Agent 开发平台。
-          </p>
+          <strong>多 Agent 协同开发工作台</strong>
         </div>
 
-        <nav aria-label="Primary" className="primary-nav">
+        <nav aria-label="Primary" className="topbar__nav">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
-              className={({ isActive }) => (isActive ? "nav-link nav-link--active" : "nav-link")}
+              className={({ isActive }) => (isActive ? "topbar__link topbar__link--active" : "topbar__link")}
             >
               {item.label}
             </NavLink>
           ))}
         </nav>
 
-        <div className="status-ribbon">
-          <span>在线</span>
-          <strong>SSE + 转录记录</strong>
+        <div className="topbar__meta">
+          <span className="topbar__meta-dot" />
+          <div>
+            <span>在线协作</span>
+            <strong>SSE + transcript</strong>
+          </div>
         </div>
-      </aside>
+      </header>
 
       <main className="main-panel">
         <Outlet />

@@ -14,19 +14,20 @@ type MissionBoardProps = {
 export function MissionBoard({ missions, boardsByMission }: MissionBoardProps) {
   return (
     <section className="panel panel--feature">
-      <div className="panel-header">
+      <div className="panel-header panel-header--compact">
         <p className="panel-kicker">总任务看板</p>
         <span className="badge">{missions.length} 个 Mission</span>
       </div>
       <div className="mission-board-grid">
-        {missions.map((mission) => {
+        {missions.map((mission, index) => {
           const board = boardsByMission[mission.id];
           const tasks = board?.items ?? [];
+          const pendingCount = tasks.filter((task) => task.status !== "done").length;
           return (
-            <article key={mission.id} className="mission-card">
+            <article key={mission.id} className={index === 0 ? "mission-card mission-card--featured" : "mission-card"}>
               <div className="list-card__meta">
                 <span>{formatStatusLabel(mission.status)}</span>
-                <span>{tasks.length} 个任务</span>
+                <span>{pendingCount}/{tasks.length || 0} 进行中</span>
               </div>
               <h3>{mission.title}</h3>
               <p>{mission.description ?? "暂无任务说明。"}</p>
@@ -38,9 +39,10 @@ export function MissionBoard({ missions, boardsByMission }: MissionBoardProps) {
                   </div>
                 ))}
               </div>
-              <div className="action-row">
+              <div className="mission-card__footer">
+                <span className="mission-card__hint">管理员可在 Mission 内决定是否继续分派或归档。</span>
                 <Link className="action-link" to={`/missions/${mission.id}`}>
-                  进入任务
+                  打开任务
                 </Link>
               </div>
             </article>

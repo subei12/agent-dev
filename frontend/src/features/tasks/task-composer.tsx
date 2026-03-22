@@ -28,15 +28,17 @@ export function TaskComposer({ agents, onCreateTask, isSubmitting }: TaskCompose
   };
 
   return (
-    <section className="panel">
-      <div className="panel-header">
+    <section className="panel panel--feature task-composer-card">
+      <div className="panel-header panel-header--compact">
         <p className="panel-kicker">新增任务</p>
         <span className="badge">快速创建</span>
       </div>
-      <form className="inline-form inline-form--wide" onSubmit={handleSubmit}>
+      <h2>把新任务直接放进当前推进节奏里。</h2>
+      <p className="panel-copy">创建后会直接回到任务看板，方便立刻分派 Agent、领取或进入评审流转。</p>
+      <form className="inline-form inline-form--wide task-composer-form" onSubmit={handleSubmit}>
         <label className="field">
           <span>任务标题</span>
-          <input value={title} onChange={(event) => setTitle(event.target.value)} />
+          <input placeholder="例如：补充管理员复核流程" value={title} onChange={(event) => setTitle(event.target.value)} />
         </label>
         <label className="field field--compact">
           <span>任务类型</span>
@@ -63,6 +65,10 @@ export function TaskComposer({ agents, onCreateTask, isSubmitting }: TaskCompose
           新增任务
         </button>
       </form>
+      <div className="task-composer__tips">
+        <span className="badge">主操作常驻首屏</span>
+        <span className="badge">支持立即指定 Agent</span>
+      </div>
     </section>
   );
 }

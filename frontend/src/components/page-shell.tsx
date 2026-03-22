@@ -14,7 +14,7 @@ export function PageShell({ eyebrow, title, description, aside, children }: Page
   return (
     <section className="page-shell">
       <header className="hero-panel">
-        <div>
+        <div className="hero-copy-block">
           <p className="eyebrow">{eyebrow}</p>
           <h1>{title}</h1>
           <p className="hero-copy">{description}</p>

@@ -29,7 +29,7 @@ export function TaskDetailPanel({ task, documents }: TaskDetailPanelProps) {
 
   return (
     <section className="panel panel--feature">
-      <div className="panel-header">
+      <div className="panel-header panel-header--compact">
         <p className="panel-kicker">任务详情</p>
         <span className="badge">{formatStatusLabel(task.status)}</span>
       </div>
@@ -37,6 +37,16 @@ export function TaskDetailPanel({ task, documents }: TaskDetailPanelProps) {
       <p className="panel-copy">
         {formatTypeLabel(task.type)} · {task.assignedAgentId ?? "未分配 Agent"}
       </p>
+      <div className="detail-metrics">
+        <div className="compact-card">
+          <strong>任务类型</strong>
+          <p>{formatTypeLabel(task.type)}</p>
+        </div>
+        <div className="compact-card">
+          <strong>当前负责人</strong>
+          <p>{task.assignedAgentId ?? "尚未分配"}</p>
+        </div>
+      </div>
       <div className="stack">
         <div className="empty-card">
           <strong>上下游依赖</strong>

@@ -39,14 +39,14 @@ export function TaskRuntimePanel({
 
   return (
     <section className="panel panel--feature">
-      <div className="panel-header">
+      <div className="panel-header panel-header--compact">
         <p className="panel-kicker">Agent 执行区</p>
         <span className="badge">{runtimes.length} 个 Agent</span>
       </div>
       {runtimes.length > 0 ? (
         <>
           <div className="panel-subsection">
-            <div className="panel-header">
+            <div className="panel-header panel-header--compact">
               <p className="panel-kicker">活动 Agent</p>
               <span className="badge">点击切换日志</span>
             </div>

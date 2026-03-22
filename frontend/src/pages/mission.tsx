@@ -35,6 +35,7 @@ import { TaskDetailPanel } from "../features/tasks/task-detail-panel";
 import { TaskBoard } from "../features/tasks/task-board";
 import { TaskRuntimePanel } from "../features/runtime/task-runtime-panel";
 import { getRuntimeEvents, getTranscript, getTranscriptAccessAudits } from "../lib/api";
+import { formatStatusLabel } from "../lib/display";
 
 const projectId = "proj_1";
 
@@ -203,13 +204,19 @@ export function MissionPage() {
 
   return (
     <PageShell
-      eyebrow="Mission 工作台"
-      title="任务作业空间"
-      description="围绕当前 Mission 的任务推进、任务详情、Agent 执行日志和产物协同来组织页面。"
+      eyebrow="任务工作台"
+      title={missionQuery.data?.title ?? "任务作业空间"}
+      description="先推进任务，再查看文档、运行日志、审批和归档决策；所有高频动作都保留在第一屏附近。"
       aside={
-        <div className="hero-stat">
-          <span>工作区</span>
-          <strong>{missionId}</strong>
+        <div className="hero-stat-grid hero-stat-grid--mission">
+          <div className="hero-stat">
+            <span>当前阶段</span>
+            <strong>{missionQuery.data ? formatStatusLabel(missionQuery.data.status) : "离线快照"}</strong>
+          </div>
+          <div className="hero-stat hero-stat--muted">
+            <span>当前任务</span>
+            <strong>{selectedTask?.title ?? "等待选择"}</strong>
+          </div>
         </div>
       }
     >
