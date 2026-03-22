@@ -251,6 +251,20 @@ textarea {
   gap: 0.9rem;
 }
 
+.progress-step {
+  border-style: dashed;
+}
+
+.progress-step--done {
+  border-color: rgba(15, 97, 94, 0.22);
+  background: linear-gradient(180deg, rgba(15, 97, 94, 0.08), rgba(255, 255, 255, 0.52));
+}
+
+.progress-step--active {
+  border-color: rgba(187, 77, 43, 0.26);
+  background: linear-gradient(180deg, rgba(187, 77, 43, 0.1), rgba(255, 255, 255, 0.56));
+}
+
 .list-card,
 .empty-card,
 .runtime-card,

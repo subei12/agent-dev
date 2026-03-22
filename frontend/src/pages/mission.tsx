@@ -202,7 +202,7 @@ export function MissionPage() {
         </div>
       }
     >
-      <MissionOverview mission={missionQuery.data ?? null} />
+      <MissionOverview mission={missionQuery.data ?? null} tasks={taskBoardQuery.data?.items ?? []} />
       <div className="mission-layout">
         <div className="workspace-column workspace-column--tasks">
           <section className="panel mission-board-shell">

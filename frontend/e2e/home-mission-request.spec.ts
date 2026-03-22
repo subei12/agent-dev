@@ -100,6 +100,7 @@ test("home page lets user create one mission requirement and enter the mission w
   await page.getByRole("button", { name: "提交需求" }).click();
 
   await expect(page).toHaveURL(/\/missions\/mission_2$/);
+  await expect(page.getByText("自动推进状态", { exact: true })).toBeVisible();
   await expect(page.getByText("内部执行任务", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "管理员 Agent 收敛方案" }).first()).toBeVisible();
 });

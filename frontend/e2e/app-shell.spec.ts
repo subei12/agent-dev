@@ -19,6 +19,8 @@ test("mission page shows documents and task board", async ({ page }) => {
   await page.goto("/missions/mission_1");
 
   await expect(page.getByText("内部执行任务", { exact: true })).toBeVisible();
+  await expect(page.getByText("自动推进状态", { exact: true })).toBeVisible();
+  await expect(page.getByText("需求收敛", { exact: true })).toBeVisible();
   await expect(page.getByText("待开始", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("文档", { exact: true })).toBeVisible();
   await expect(page.getByText("任务详情", { exact: true })).toBeVisible();
