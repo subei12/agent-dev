@@ -140,3 +140,46 @@ func (q *Queries) ListApprovalIDsByMission(ctx context.Context, missionID pgtype
 	}
 	return items, nil
 }
+
+const listApprovalsByMission = `-- name: ListApprovalsByMission :many
+select id, mission_id, run_id, node_run_id, action, subject_type, subject_id, intent_snapshot_json, intent_hash, status, comment, created_by, decided_by, created_at, decided_at
+from approvals
+where mission_id = $1
+order by created_at desc
+`
+
+func (q *Queries) ListApprovalsByMission(ctx context.Context, missionID pgtype.Text) ([]Approval, error) {
+	rows, err := q.db.Query(ctx, listApprovalsByMission, missionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Approval
+	for rows.Next() {
+		var i Approval
+		if err := rows.Scan(
+			&i.ID,
+			&i.MissionID,
+			&i.RunID,
+			&i.NodeRunID,
+			&i.Action,
+			&i.SubjectType,
+			&i.SubjectID,
+			&i.IntentSnapshotJson,
+			&i.IntentHash,
+			&i.Status,
+			&i.Comment,
+			&i.CreatedBy,
+			&i.DecidedBy,
+			&i.CreatedAt,
+			&i.DecidedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
