@@ -39,28 +39,33 @@ func NewAPI(cfg platformconfig.Config) (*APIApp, error) {
 	}
 	authorizer := authz.New(pool)
 
+	discussionService := discussion.NewService(
+		discussion.NewRepository(pool),
+	)
+	documentService := document.NewService(
+		document.NewRepository(pool),
+	)
+	taskService := task.NewService(
+		task.NewRepository(pool),
+	)
+
 	missionHandler := mission.NewHandler(
 		mission.NewService(
 			mission.NewRepository(pool),
+			mission.NewDefaultBootstrapper(discussionService, documentService, taskService),
 		),
 		authorizer,
 	)
 	documentHandler := document.NewHandler(
-		document.NewService(
-			document.NewRepository(pool),
-		),
+		documentService,
 		authorizer,
 	)
 	discussionHandler := discussion.NewHandler(
-		discussion.NewService(
-			discussion.NewRepository(pool),
-		),
+		discussionService,
 		authorizer,
 	)
 	taskHandler := task.NewHandler(
-		task.NewService(
-			task.NewRepository(pool),
-		),
+		taskService,
 		authorizer,
 	)
 	runtimeHandler := runtime.NewHandler(
