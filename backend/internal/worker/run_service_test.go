@@ -17,6 +17,8 @@ type fakeStore struct {
 	resolvedTasks     map[string]TaskTransitionTarget
 	createdClaims     []ClaimTaskInput
 	handoffs          []AdminHandoffInput
+	missionDecisions  []MissionDecisionInput
+	missionStatuses   map[string]string
 }
 
 // GetClaimExecutionContext 返回请求的资源或值。
@@ -88,6 +90,21 @@ func (f *fakeStore) CreateTaskClaim(_ context.Context, input ClaimTaskInput) err
 // CreateAdminHandoff 创建管理员回流记录。
 func (f *fakeStore) CreateAdminHandoff(_ context.Context, input AdminHandoffInput) error {
 	f.handoffs = append(f.handoffs, input)
+	return nil
+}
+
+// CreateMissionDecision 创建 Mission 结项决策。
+func (f *fakeStore) CreateMissionDecision(_ context.Context, input MissionDecisionInput) error {
+	f.missionDecisions = append(f.missionDecisions, input)
+	return nil
+}
+
+// UpdateMissionStatus 更新 Mission 状态。
+func (f *fakeStore) UpdateMissionStatus(_ context.Context, missionID, status string) error {
+	if f.missionStatuses == nil {
+		f.missionStatuses = map[string]string{}
+	}
+	f.missionStatuses[missionID] = status
 	return nil
 }
 
@@ -258,5 +275,40 @@ func TestSuccessfulClaimWithoutDownstreamReturnsToAdmin(t *testing.T) {
 	}
 	if store.handoffs[0].AdminAgentID != "agent_admin" {
 		t.Fatalf("expected admin handoff to agent_admin, got %q", store.handoffs[0].AdminAgentID)
+	}
+}
+
+// TestSuccessfulAdminReviewCompletesMission 验证管理员最终复核任务会自动结项 Mission。
+func TestSuccessfulAdminReviewCompletesMission(t *testing.T) {
+	store := &fakeStore{
+		claimContext: ClaimExecutionContext{
+			ClaimID:           "claim_1",
+			MissionID:         "mission_1",
+			TaskItemID:        "task_review",
+			TaskTitle:         "管理员复核与结项",
+			AgentID:           "agent_admin",
+			ExecutorProfileID: "exec_admin",
+			AdminAgentID:      "agent_admin",
+		},
+		acquireOK: true,
+	}
+	launcher := &fakeLauncher{}
+	svc := NewRunService(store, launcher)
+
+	if err := svc.ExecuteClaimedTask(context.Background(), "claim_1"); err != nil {
+		t.Fatalf("execute claimed task: %v", err)
+	}
+
+	if got := store.updatedTaskStatus["task_review"]; got != "done" {
+		t.Fatalf("expected task_review status done, got %q", got)
+	}
+	if len(store.missionDecisions) != 1 {
+		t.Fatalf("expected 1 mission decision, got %d", len(store.missionDecisions))
+	}
+	if store.missionDecisions[0].Decision != "complete_mission" {
+		t.Fatalf("expected complete_mission decision, got %q", store.missionDecisions[0].Decision)
+	}
+	if got := store.missionStatuses["mission_1"]; got != "completed" {
+		t.Fatalf("expected mission status completed, got %q", got)
 	}
 }

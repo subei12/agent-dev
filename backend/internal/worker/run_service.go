@@ -67,6 +67,13 @@ type AdminHandoffInput struct {
 	Summary       string
 }
 
+type MissionDecisionInput struct {
+	MissionID        string
+	DecidedByAgentID string
+	Decision         string
+	Summary          string
+}
+
 type Store interface {
 	GetClaimExecutionContext(context.Context, string) (ClaimExecutionContext, error)
 	AcquireClaimExecution(context.Context, string, string, time.Time) (bool, error)
@@ -80,6 +87,8 @@ type Store interface {
 	ResolveTaskByIdentifier(context.Context, string, string) (TaskTransitionTarget, error)
 	CreateTaskClaim(context.Context, ClaimTaskInput) error
 	CreateAdminHandoff(context.Context, AdminHandoffInput) error
+	CreateMissionDecision(context.Context, MissionDecisionInput) error
+	UpdateMissionStatus(context.Context, string, string) error
 }
 
 type Launcher interface {
@@ -202,7 +211,18 @@ func (s *RunService) advanceTaskChain(ctx context.Context, execCtx ClaimExecutio
 	}
 
 	// 3. 管理员任务无下游时，先标记为完成，后续由管理员决策链补结项。
-	return s.store.UpdateTaskStatus(ctx, execCtx.TaskItemID, "done")
+	if err := s.store.UpdateTaskStatus(ctx, execCtx.TaskItemID, "done"); err != nil {
+		return err
+	}
+	if err := s.store.CreateMissionDecision(ctx, MissionDecisionInput{
+		MissionID:        execCtx.MissionID,
+		DecidedByAgentID: execCtx.AdminAgentID,
+		Decision:         "complete_mission",
+		Summary:          "管理员 Agent 已完成最终复核，Mission 自动结项。",
+	}); err != nil {
+		return err
+	}
+	return s.store.UpdateMissionStatus(ctx, execCtx.MissionID, "completed")
 }
 
 // runHeartbeatLoop 在执行上下文结束前持续刷新 claim 心跳。
@@ -392,6 +412,30 @@ func (r *Repository) CreateAdminHandoff(ctx context.Context, input AdminHandoffI
 		RiskSummary:                  textValue(""),
 		RecommendedNextAction:        textValue("管理员 Agent 判断是否完成或追加检查"),
 		Status:                       "pending",
+	})
+	return err
+}
+
+// CreateMissionDecision 写入管理员最终决策。
+func (r *Repository) CreateMissionDecision(ctx context.Context, input MissionDecisionInput) error {
+	_, err := r.queries.CreateMissionDecision(ctx, sqlc.CreateMissionDecisionParams{
+		ID:                           uuid.NewString(),
+		MissionID:                    input.MissionID,
+		DecidedByAgentID:             input.DecidedByAgentID,
+		Decision:                     input.Decision,
+		Summary:                      input.Summary,
+		RelatedTaskItemID:            textValue(""),
+		RelatedDocumentVersionIdsJson: []byte("[]"),
+		RelatedRepoCandidateIdsJson:   []byte("[]"),
+	})
+	return err
+}
+
+// UpdateMissionStatus 更新 Mission 主状态。
+func (r *Repository) UpdateMissionStatus(ctx context.Context, missionID, status string) error {
+	_, err := r.queries.UpdateMissionStatus(ctx, sqlc.UpdateMissionStatusParams{
+		ID:     missionID,
+		Status: status,
 	})
 	return err
 }
