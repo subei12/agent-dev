@@ -497,6 +497,39 @@ func (q *Queries) ListActiveTaskClaimIDs(ctx context.Context) ([]string, error) 
 	return items, nil
 }
 
+const listTaskBoardsByMission = `-- name: ListTaskBoardsByMission :many
+select id, mission_id, title, created_at, updated_at
+from task_boards
+where mission_id = $1
+order by created_at asc
+`
+
+func (q *Queries) ListTaskBoardsByMission(ctx context.Context, missionID string) ([]TaskBoard, error) {
+	rows, err := q.db.Query(ctx, listTaskBoardsByMission, missionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TaskBoard
+	for rows.Next() {
+		var i TaskBoard
+		if err := rows.Scan(
+			&i.ID,
+			&i.MissionID,
+			&i.Title,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTaskItemsByBoard = `-- name: ListTaskItemsByBoard :many
 select id, board_id, title, type, status, assigned_agent_id, upstream_task_ids_json, downstream_task_ids_json, input_document_version_ids_json, input_repo_candidate_ids_json, definition_of_done_json, created_at, updated_at
 from task_items

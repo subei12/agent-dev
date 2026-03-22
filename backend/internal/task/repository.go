@@ -53,6 +53,20 @@ func (r *Repository) CreateTaskItem(ctx context.Context, boardID string, cmd Cre
 	return itemFromRow(row), nil
 }
 
+// ListBoards 返回 Mission 下的看板列表。
+func (r *Repository) ListBoards(ctx context.Context, missionID string) ([]TaskBoard, error) {
+	rows, err := sqlc.New(r.pool).ListTaskBoardsByMission(ctx, missionID)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]TaskBoard, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, boardFromRow(row))
+	}
+	return items, nil
+}
+
 // GetBoard 返回请求的资源或值。
 func (r *Repository) GetBoard(ctx context.Context, missionID string) (TaskBoard, error) {
 	row, err := sqlc.New(r.pool).GetLatestTaskBoardByMission(ctx, missionID)

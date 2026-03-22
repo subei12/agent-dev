@@ -27,6 +27,7 @@ func NewHandler(service Service, authorizer ...authz.Authorizer) *Handler {
 func (h *Handler) RegisterRoutes(r chi.Router) {
 	r.Get("/api/projects/{projectId}/missions/{missionId}/task-board", h.getBoard)
 	r.Post("/api/projects/{projectId}/missions/{missionId}/task-board", h.createBoard)
+	r.Post("/api/projects/{projectId}/missions/{missionId}/tasks", h.createTask)
 	r.Post("/api/projects/{projectId}/missions/{missionId}/tasks/{taskId}/claim", h.claimTask)
 	r.Post("/api/projects/{projectId}/missions/{missionId}/tasks/{taskId}/handoffs", h.createHandoff)
 	r.Post("/api/projects/{projectId}/missions/{missionId}/tasks/{taskId}/review-checkpoints", h.createCheckpoint)
@@ -35,6 +36,17 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 type createBoardRequest struct {
 	Title string              `json:"title"`
 	Items []CreateTaskItemCmd `json:"items"`
+}
+
+type createTaskRequest struct {
+	Title                   string          `json:"title"`
+	Type                    string          `json:"type"`
+	AssignedAgentID         string          `json:"assignedAgentId,omitempty"`
+	UpstreamTaskIDs         json.RawMessage `json:"upstreamTaskIds"`
+	DownstreamTaskIDs       json.RawMessage `json:"downstreamTaskIds"`
+	InputDocumentVersionIDs json.RawMessage `json:"inputDocumentVersionIds"`
+	InputRepoCandidateIDs   json.RawMessage `json:"inputRepoCandidateIds"`
+	DefinitionOfDone        json.RawMessage `json:"definitionOfDone"`
 }
 
 type claimTaskRequest struct {
@@ -95,6 +107,35 @@ func (h *Handler) createBoard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusCreated, board)
+}
+
+// createTask 实现当前函数行为。
+func (h *Handler) createTask(w http.ResponseWriter, r *http.Request) {
+	if err := h.require(r); err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
+	var req createTaskRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	taskItem, err := h.service.AddTask(r.Context(), chi.URLParam(r, "missionId"), CreateTaskItemCmd{
+		Title:                   req.Title,
+		Type:                    req.Type,
+		AssignedAgentID:         req.AssignedAgentID,
+		UpstreamTaskIDs:         req.UpstreamTaskIDs,
+		DownstreamTaskIDs:       req.DownstreamTaskIDs,
+		InputDocumentVersionIDs: req.InputDocumentVersionIDs,
+		InputRepoCandidateIDs:   req.InputRepoCandidateIDs,
+		DefinitionOfDone:        req.DefinitionOfDone,
+	})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusCreated, taskItem)
 }
 
 // claimTask 实现当前函数行为。

@@ -41,6 +41,20 @@ func (r *Repository) CreateMission(ctx context.Context, cmd CreateMissionCmd) (M
 	return missionFromRow(row), nil
 }
 
+// ListMissions 返回指定项目下的 Mission 列表。
+func (r *Repository) ListMissions(ctx context.Context, projectID string) ([]Mission, error) {
+	rows, err := r.queries.ListMissionsByProject(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]Mission, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, missionFromRow(row))
+	}
+	return items, nil
+}
+
 // GetMission 返回请求的资源或值。
 func (r *Repository) GetMission(ctx context.Context, projectID, missionID string) (Mission, error) {
 	row, err := r.queries.GetMission(ctx, sqlc.GetMissionParams{

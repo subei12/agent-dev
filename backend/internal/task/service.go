@@ -9,6 +9,7 @@ import (
 type Store interface {
 	CreateBoard(context.Context, string, string) (TaskBoard, error)
 	CreateTaskItem(context.Context, string, CreateTaskItemCmd) (TaskItem, error)
+	ListBoards(context.Context, string) ([]TaskBoard, error)
 	GetBoard(context.Context, string) (TaskBoard, error)
 	ListTaskItems(context.Context, string) ([]TaskItem, error)
 	GetTaskItem(context.Context, string) (TaskItem, error)
@@ -20,6 +21,7 @@ type Store interface {
 
 type Service interface {
 	CreateBoard(context.Context, CreateBoardCmd) (TaskBoard, error)
+	AddTask(context.Context, string, CreateTaskItemCmd) (TaskItem, error)
 	GetBoard(context.Context, string) (TaskBoard, error)
 	Claim(context.Context, ClaimTaskCmd) (TaskClaim, error)
 	CreateHandoff(context.Context, CreateHandoffCmd) (TaskHandoff, error)
@@ -51,6 +53,27 @@ func (s *service) CreateBoard(ctx context.Context, cmd CreateBoardCmd) (TaskBoar
 	}
 
 	return board, nil
+}
+
+// AddTask 为 Mission 的最新看板追加任务；若看板不存在则自动创建默认看板。
+func (s *service) AddTask(ctx context.Context, missionID string, cmd CreateTaskItemCmd) (TaskItem, error) {
+	boards, err := s.store.ListBoards(ctx, missionID)
+	if err != nil {
+		return TaskItem{}, err
+	}
+
+	var boardID string
+	if len(boards) == 0 {
+		board, err := s.store.CreateBoard(ctx, missionID, "默认看板")
+		if err != nil {
+			return TaskItem{}, err
+		}
+		boardID = board.ID
+	} else {
+		boardID = boards[len(boards)-1].ID
+	}
+
+	return s.store.CreateTaskItem(ctx, boardID, cmd)
 }
 
 // GetBoard 返回请求的资源或值。

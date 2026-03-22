@@ -235,6 +235,31 @@ test("mission workspace supports creating discussion, document, claiming task, a
     await route.fulfill({ json: [] });
   });
 
+  await page.route("**/api/projects/proj_1/agents", async (route) => {
+    await route.fulfill({
+      json: [
+        {
+          id: "agent_backend",
+          name: "后端 Agent",
+          enabled: true,
+          executorProfileId: "exec_backend",
+          executorType: "codex_cli",
+          command: "codex",
+          args: ["--approval-mode", "full-auto"],
+          timeoutSec: 3600,
+          maxConcurrency: 1,
+          allowRepoRead: true,
+          allowRepoWrite: true,
+          allowNetwork: false
+        }
+      ]
+    });
+  });
+
+  await page.route("**/api/projects/proj_1/missions/mission_1/approvals", async (route) => {
+    await route.fulfill({ json: [] });
+  });
+
   await page.goto("/missions/mission_1");
 
   await page.getByLabel("讨论主题").fill("管理员复核流程");
@@ -253,11 +278,11 @@ test("mission workspace supports creating discussion, document, claiming task, a
 
   await page.getByRole("button", { name: "领取任务" }).click();
   await expect(page.getByText("任务已领取", { exact: true })).toBeVisible();
-  await expect(page.getByText("已领取", { exact: true })).toBeVisible();
+  await expect(page.getByText("已领取", { exact: true }).first()).toBeVisible();
 
   await page.getByRole("button", { name: "提交管理员" }).click();
   await expect(page.getByText("任务已提交给管理员", { exact: true })).toBeVisible();
-  await expect(page.getByText("等待交接", { exact: true })).toBeVisible();
+  await expect(page.getByText("等待交接", { exact: true }).first()).toBeVisible();
 
   await page.getByRole("button", { name: "请求评审" }).click();
   await expect(page.getByText("已发起检查点")).toBeVisible();

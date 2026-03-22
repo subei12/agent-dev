@@ -6,6 +6,21 @@ export type Mission = {
   description?: string;
 };
 
+export type AgentConfig = {
+  id: string;
+  name: string;
+  enabled: boolean;
+  executorProfileId: string;
+  executorType: string;
+  command: string;
+  args: string[];
+  timeoutSec: number;
+  maxConcurrency: number;
+  allowRepoRead: boolean;
+  allowRepoWrite: boolean;
+  allowNetwork: boolean;
+};
+
 export type DocumentItem = {
   id: string;
   title: string;
@@ -29,16 +44,21 @@ export type DiscussionSession = {
   status: string;
 };
 
+export type TaskItemView = {
+  id: string;
+  title: string;
+  type: string;
+  status: string;
+  assignedAgentId?: string;
+  upstreamTaskIds?: string[];
+  downstreamTaskIds?: string[];
+  inputDocumentVersionIds?: string[];
+};
+
 export type TaskBoard = {
   id: string;
   title: string;
-  items?: Array<{
-    id: string;
-    title: string;
-    type: string;
-    status: string;
-    assignedAgentId?: string;
-  }>;
+  items?: TaskItemView[];
 };
 
 export type MissionRuntime = {
@@ -145,6 +165,14 @@ export async function getMission(projectId: string, missionId: string): Promise<
   }
 }
 
+export async function getMissions(projectId: string): Promise<Mission[]> {
+  try {
+    return await request<Mission[]>(`/api/projects/${projectId}/missions`);
+  } catch {
+    return [];
+  }
+}
+
 export async function getMissionDocuments(projectId: string, missionId: string): Promise<DocumentItem[]> {
   try {
     return await request<DocumentItem[]>(`/api/projects/${projectId}/missions/${missionId}/documents`);
@@ -191,6 +219,14 @@ export async function getTaskBoard(projectId: string, missionId: string): Promis
   } catch {
     return null;
   }
+}
+
+export function createTask(projectId: string, missionId: string, payload: {
+  title: string;
+  type: string;
+  assignedAgentId?: string;
+}) {
+  return send<TaskItemView>(`/api/projects/${projectId}/missions/${missionId}/tasks`, "POST", payload);
 }
 
 export async function getRuntimeSession(projectId: string, sessionId: string) {
@@ -241,6 +277,18 @@ export async function getTranscriptAccessAudits(
   } catch {
     return [];
   }
+}
+
+export async function getAgentConfigs(projectId: string): Promise<AgentConfig[]> {
+  try {
+    return await request<AgentConfig[]>(`/api/projects/${projectId}/agents`);
+  } catch {
+    return [];
+  }
+}
+
+export function updateAgentConfig(projectId: string, agentId: string, payload: Partial<AgentConfig>) {
+  return send<AgentConfig>(`/api/projects/${projectId}/agents/${agentId}`, "PATCH", payload);
 }
 
 /**

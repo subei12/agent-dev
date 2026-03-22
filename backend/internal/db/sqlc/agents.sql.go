@@ -44,3 +44,139 @@ func (q *Queries) ListAgentsByProject(ctx context.Context, projectID string) ([]
 	}
 	return items, nil
 }
+
+const listExecutorProfilesByProject = `-- name: ListExecutorProfilesByProject :many
+select id, project_id, name, type, command, args_json, env_secret_refs_json, timeout_sec, max_concurrency, max_prompt_chars, allow_repo_read, allow_repo_write, allow_network, created_at, updated_at
+from executor_profiles
+where project_id = $1
+order by created_at desc
+`
+
+func (q *Queries) ListExecutorProfilesByProject(ctx context.Context, projectID string) ([]ExecutorProfile, error) {
+	rows, err := q.db.Query(ctx, listExecutorProfilesByProject, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ExecutorProfile
+	for rows.Next() {
+		var i ExecutorProfile
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.Name,
+			&i.Type,
+			&i.Command,
+			&i.ArgsJson,
+			&i.EnvSecretRefsJson,
+			&i.TimeoutSec,
+			&i.MaxConcurrency,
+			&i.MaxPromptChars,
+			&i.AllowRepoRead,
+			&i.AllowRepoWrite,
+			&i.AllowNetwork,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateAgent = `-- name: UpdateAgent :one
+update agents
+set
+  name = $2,
+  enabled = $3,
+  updated_at = now()
+where id = $1
+returning id, project_id, name, role_id, executor_profile_id, enabled, created_at, updated_at
+`
+
+type UpdateAgentParams struct {
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	Enabled bool   `json:"enabled"`
+}
+
+func (q *Queries) UpdateAgent(ctx context.Context, arg UpdateAgentParams) (Agent, error) {
+	row := q.db.QueryRow(ctx, updateAgent, arg.ID, arg.Name, arg.Enabled)
+	var i Agent
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.Name,
+		&i.RoleID,
+		&i.ExecutorProfileID,
+		&i.Enabled,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateExecutorProfile = `-- name: UpdateExecutorProfile :one
+update executor_profiles
+set
+  type = $2,
+  command = $3,
+  args_json = $4,
+  timeout_sec = $5,
+  max_concurrency = $6,
+  allow_repo_read = $7,
+  allow_repo_write = $8,
+  allow_network = $9,
+  updated_at = now()
+where id = $1
+returning id, project_id, name, type, command, args_json, env_secret_refs_json, timeout_sec, max_concurrency, max_prompt_chars, allow_repo_read, allow_repo_write, allow_network, created_at, updated_at
+`
+
+type UpdateExecutorProfileParams struct {
+	ID             string `json:"id"`
+	Type           string `json:"type"`
+	Command        string `json:"command"`
+	ArgsJson       []byte `json:"args_json"`
+	TimeoutSec     int32  `json:"timeout_sec"`
+	MaxConcurrency int32  `json:"max_concurrency"`
+	AllowRepoRead  bool   `json:"allow_repo_read"`
+	AllowRepoWrite bool   `json:"allow_repo_write"`
+	AllowNetwork   bool   `json:"allow_network"`
+}
+
+func (q *Queries) UpdateExecutorProfile(ctx context.Context, arg UpdateExecutorProfileParams) (ExecutorProfile, error) {
+	row := q.db.QueryRow(ctx, updateExecutorProfile,
+		arg.ID,
+		arg.Type,
+		arg.Command,
+		arg.ArgsJson,
+		arg.TimeoutSec,
+		arg.MaxConcurrency,
+		arg.AllowRepoRead,
+		arg.AllowRepoWrite,
+		arg.AllowNetwork,
+	)
+	var i ExecutorProfile
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.Name,
+		&i.Type,
+		&i.Command,
+		&i.ArgsJson,
+		&i.EnvSecretRefsJson,
+		&i.TimeoutSec,
+		&i.MaxConcurrency,
+		&i.MaxPromptChars,
+		&i.AllowRepoRead,
+		&i.AllowRepoWrite,
+		&i.AllowNetwork,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}

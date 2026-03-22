@@ -26,6 +26,7 @@ func NewHandler(service Service, authorizer ...authz.Authorizer) *Handler {
 // RegisterRoutes 实现当前函数行为。
 func (h *Handler) RegisterRoutes(r chi.Router) {
 	r.Route("/api/projects/{projectId}/missions", func(r chi.Router) {
+		r.Get("/", h.listMissions)
 		r.Post("/", h.createMission)
 		r.Get("/{missionId}", h.getMission)
 		r.Post("/{missionId}/decisions", h.decideMission)
@@ -46,6 +47,16 @@ type decideMissionRequest struct {
 	DecidedByAgentID string `json:"decidedByAgentId"`
 	Decision         string `json:"decision"`
 	Summary          string `json:"summary"`
+}
+
+// listMissions 实现当前函数行为。
+func (h *Handler) listMissions(w http.ResponseWriter, r *http.Request) {
+	items, err := h.service.ListMissions(r.Context(), chi.URLParam(r, "projectId"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, items)
 }
 
 // createMission 实现当前函数行为。

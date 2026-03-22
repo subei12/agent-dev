@@ -4,6 +4,7 @@ import "context"
 
 type Service interface {
 	CreateMission(context.Context, CreateMissionCmd) (Mission, error)
+	ListMissions(context.Context, string) ([]Mission, error)
 	GetMission(context.Context, string, string) (Mission, error)
 	Decide(context.Context, DecideMissionCmd) (MissionDecision, error)
 }
@@ -26,6 +27,11 @@ func (s *service) CreateMission(ctx context.Context, cmd CreateMissionCmd) (Miss
 		cmd.CreatedBy = "system"
 	}
 	return s.repo.CreateMission(ctx, cmd)
+}
+
+// ListMissions 返回指定项目下的 Mission 列表。
+func (s *service) ListMissions(ctx context.Context, projectID string) ([]Mission, error) {
+	return s.repo.ListMissions(ctx, projectID)
 }
 
 // GetMission 返回请求的资源或值。

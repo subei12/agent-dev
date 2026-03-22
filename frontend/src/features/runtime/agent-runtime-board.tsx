@@ -9,7 +9,13 @@ const fallbackRuntimes: MissionRuntime[] = [
 /**
  * AgentRuntimeBoard 渲染或处理当前前端行为。
  */
-export function AgentRuntimeBoard({ runtimes }: { runtimes: MissionRuntime[] }) {
+export function AgentRuntimeBoard({
+  runtimes,
+  onSelectRuntime
+}: {
+  runtimes: MissionRuntime[];
+  onSelectRuntime: (sessionId: string | null) => void;
+}) {
   const items = runtimes.length > 0 ? runtimes : fallbackRuntimes;
 
   return (
@@ -20,14 +26,19 @@ export function AgentRuntimeBoard({ runtimes }: { runtimes: MissionRuntime[] }) 
       </div>
       <div className="runtime-grid">
         {items.map((runtime) => (
-          <article key={runtime.id} className="runtime-card">
+          <button
+            key={runtime.id}
+            className="runtime-card"
+            onClick={() => onSelectRuntime(runtime.currentExecutorSessionId ?? null)}
+            type="button"
+          >
             <div className="runtime-card__meta">
               <span>{runtime.agentId}</span>
               <span>{formatStatusLabel(runtime.status)}</span>
             </div>
             <p>{runtime.statusSummary ?? "当前还没有运行摘要。"}</p>
             <code>{runtime.currentExecutorSessionId ?? "当前没有 session"}</code>
-          </article>
+          </button>
         ))}
       </div>
     </section>

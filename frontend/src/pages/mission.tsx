@@ -9,8 +9,10 @@ import {
   createDiscussionSession,
   createDocument,
   createDocumentVersion,
+  createTask,
   getDiscussionSessions,
   getDocumentVersions,
+  getAgentConfigs,
   getMissionApprovals,
   getMissionArchive,
   getMission,
@@ -28,9 +30,13 @@ import { MissionActionRail } from "../features/missions/mission-action-rail";
 import { MissionApprovalPanel } from "../features/missions/mission-approval-panel";
 import { MissionArchivePanel } from "../features/missions/mission-archive-panel";
 import { MissionOverview } from "../features/missions/mission-overview";
+import { TaskComposer } from "../features/tasks/task-composer";
+import { TaskDetailPanel } from "../features/tasks/task-detail-panel";
 import { TaskBoard } from "../features/tasks/task-board";
 import { AgentRuntimeBoard } from "../features/runtime/agent-runtime-board";
 import { RuntimeEventTimeline } from "../features/runtime/runtime-event-timeline";
+import { TaskRuntimePanel } from "../features/runtime/task-runtime-panel";
+import { getRuntimeEvents, getRuntimeSession, getTranscript, getTranscriptAccessAudits } from "../lib/api";
 
 const projectId = "proj_1";
 
@@ -42,6 +48,8 @@ export function MissionPage() {
   const queryClient = useQueryClient();
   const [taskActionMessage, setTaskActionMessage] = useState("");
   const [archiveStatus, setArchiveStatus] = useState("未归档");
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
   const missionQuery = useQuery({
     queryKey: ["mission", missionId],
@@ -59,6 +67,10 @@ export function MissionPage() {
     queryKey: ["mission-runtimes", missionId],
     queryFn: () => getMissionRuntimes(projectId, missionId)
   });
+  const agentsQuery = useQuery({
+    queryKey: ["agent-configs"],
+    queryFn: () => getAgentConfigs(projectId)
+  });
   const approvalQuery = useQuery({
     queryKey: ["mission-approvals", missionId],
     queryFn: () => getMissionApprovals(projectId, missionId)
@@ -70,6 +82,21 @@ export function MissionPage() {
   const taskBoardQuery = useQuery({
     queryKey: ["mission-task-board", missionId],
     queryFn: () => getTaskBoard(projectId, missionId)
+  });
+  const sessionEventsQuery = useQuery({
+    queryKey: ["runtime-events", selectedSessionId],
+    queryFn: () => getRuntimeEvents(projectId, selectedSessionId!),
+    enabled: Boolean(selectedSessionId)
+  });
+  const sessionTranscriptQuery = useQuery({
+    queryKey: ["runtime-transcript", selectedSessionId],
+    queryFn: () => getTranscript(projectId, selectedSessionId!),
+    enabled: Boolean(selectedSessionId)
+  });
+  const sessionAuditsQuery = useQuery({
+    queryKey: ["runtime-audits", selectedSessionId],
+    queryFn: () => getTranscriptAccessAudits(projectId, selectedSessionId!),
+    enabled: Boolean(selectedSessionId)
   });
   const versionQueries = useQueries({
     queries: (documentsQuery.data ?? []).map((document) => ({
@@ -114,6 +141,13 @@ export function MissionPage() {
       await queryClient.invalidateQueries({ queryKey: ["mission-task-board", missionId] });
     }
   });
+  const taskMutation = useMutation({
+    mutationFn: (payload: { title: string; type: string; assignedAgentId?: string }) =>
+      createTask(projectId, missionId, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["mission-task-board", missionId] });
+    }
+  });
 
   const handoffMutation = useMutation({
     mutationFn: (taskId: string) => sendTaskToAdmin(projectId, missionId, taskId),
@@ -140,6 +174,11 @@ export function MissionPage() {
   const versionsByDocument = Object.fromEntries(
     (documentsQuery.data ?? []).map((document, index) => [document.id, versionQueries[index]?.data ?? []])
   );
+  const selectedTask =
+    taskBoardQuery.data?.items?.find((item) => item.id === selectedTaskId) ??
+    taskBoardQuery.data?.items?.[0] ??
+    null;
+  const runtimeItems = runtimeQuery.data ?? [];
 
   useEffect(() => {
     return subscribeToChannel(projectId, `mission:${missionId}`, () => {
@@ -150,11 +189,23 @@ export function MissionPage() {
     });
   }, [missionId, queryClient]);
 
+  useEffect(() => {
+    if (!selectedTaskId && taskBoardQuery.data?.items?.length) {
+      setSelectedTaskId(taskBoardQuery.data.items[0].id);
+    }
+  }, [selectedTaskId, taskBoardQuery.data]);
+
+  useEffect(() => {
+    if (!selectedSessionId && runtimeItems.length) {
+      setSelectedSessionId(runtimeItems[0].currentExecutorSessionId ?? null);
+    }
+  }, [runtimeItems, selectedSessionId]);
+
   return (
     <PageShell
       eyebrow="Mission 工作台"
-      title="文档、任务流转与运行态观测"
-      description="把正式文档、任务流转、审批状态和运行日志放在同一个页面里，方便管理员 Agent 做判断。"
+      title="任务作业空间"
+      description="围绕当前 Mission 的任务推进、任务详情、Agent 执行日志和产物协同来组织页面。"
       aside={
         <div className="hero-stat">
           <span>工作区</span>
@@ -168,6 +219,12 @@ export function MissionPage() {
         isArchiving={archiveMutation.isPending}
         onArchive={() => archiveMutation.mutate()}
       />
+      <TaskComposer
+        agents={agentsQuery.data ?? []}
+        isSubmitting={taskMutation.isPending}
+        onCreateTask={(payload) => taskMutation.mutate(payload)}
+      />
+      <TaskDetailPanel task={selectedTask} documents={documentsQuery.data ?? []} />
       <MissionApprovalPanel approvals={approvalQuery.data ?? []} />
       <MissionArchivePanel archive={archiveQuery.data ?? null} />
       <DocumentList
@@ -186,12 +243,21 @@ export function MissionPage() {
       <TaskBoard
         tasks={taskBoardQuery.data?.items}
         taskActionMessage={taskActionMessage}
+        onSelectTask={(taskId) => setSelectedTaskId(taskId)}
         onClaimTask={(taskId) => claimMutation.mutate(taskId)}
         onSendToAdmin={(taskId) => handoffMutation.mutate(taskId)}
         onRequestReview={(taskId) => checkpointMutation.mutate(taskId)}
       />
-      <AgentRuntimeBoard runtimes={runtimeQuery.data ?? []} />
-      <RuntimeEventTimeline events={[]} />
+      <AgentRuntimeBoard
+        runtimes={runtimeItems}
+        onSelectRuntime={(sessionId) => setSelectedSessionId(sessionId)}
+      />
+      <TaskRuntimePanel
+        runtimes={runtimeItems}
+        events={sessionEventsQuery.data ?? []}
+        transcript={sessionTranscriptQuery.data ?? null}
+        audits={sessionAuditsQuery.data ?? []}
+      />
     </PageShell>
   );
 }

@@ -51,6 +51,26 @@ test("mission workspace renders seeded api data and runtime transcript", async (
     });
   });
 
+  await page.route("**/api/projects/proj_1/agents", async (route) => {
+    await route.fulfill({ json: [] });
+  });
+
+  await page.route("**/api/projects/proj_1/missions/mission_1/approvals", async (route) => {
+    await route.fulfill({ json: [] });
+  });
+
+  await page.route("**/api/projects/proj_1/missions/mission_1/archive", async (route) => {
+    await route.fulfill({
+      json: {
+        id: "archive_1",
+        missionId: "mission_1",
+        status: "uploaded",
+        manifestObjectKey: "archives/mission_1/manifest.json",
+        bundleObjectKey: "archives/mission_1/bundle.zip"
+      }
+    });
+  });
+
   await page.route("**/api/projects/proj_1/missions/mission_1/task-board", async (route) => {
     await route.fulfill({
       json: {
@@ -131,8 +151,8 @@ test("mission workspace renders seeded api data and runtime transcript", async (
   await expect(page.getByText("演示任务")).toBeVisible();
   await expect(page.getByRole("heading", { name: "架构快照" })).toBeVisible();
   await expect(page.getByText("运行态观测范围")).toBeVisible();
-  await expect(page.getByText("正在输出 codex 会话")).toBeVisible();
-  await expect(page.getByText("实现运行态观测")).toBeVisible();
+  await expect(page.getByText("正在输出 codex 会话").first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "实现运行态观测" }).first()).toBeVisible();
 
   await page.goto("/runtime/sessions/session_1");
 

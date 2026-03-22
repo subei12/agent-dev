@@ -19,6 +19,13 @@ func (f fakeService) CreateMission(ctx context.Context, cmd CreateMissionCmd) (M
 	return f.createMission(ctx, cmd)
 }
 
+// ListMissions 返回当前查询对应的集合结果。
+func (f fakeService) ListMissions(context.Context, string) ([]Mission, error) {
+	return []Mission{
+		{ID: "mission_1", Title: "演示任务", Status: "implementation"},
+	}, nil
+}
+
 // GetMission 返回请求的资源或值。
 func (f fakeService) GetMission(context.Context, string, string) (Mission, error) {
 	return Mission{}, nil
@@ -54,5 +61,25 @@ func TestCreateMission(t *testing.T) {
 
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("expected status %d, got %d", http.StatusCreated, rec.Code)
+	}
+}
+
+// TestListMissions 验证 Mission 列表接口能正常返回。
+func TestListMissions(t *testing.T) {
+	handler := NewHandler(fakeService{
+		createMission: func(_ context.Context, cmd CreateMissionCmd) (Mission, error) {
+			return Mission{ID: "mission_1", ProjectID: cmd.ProjectID, Title: cmd.Title, Status: "discussion"}, nil
+		},
+	})
+	router := chi.NewRouter()
+	handler.RegisterRoutes(router)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/projects/proj_1/missions", nil)
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, rec.Code)
 	}
 }

@@ -3,7 +3,8 @@ import { NavLink, Outlet } from "react-router-dom";
 const navItems = [
   { to: "/", label: "首页" },
   { to: "/missions/mission_1", label: "工作台" },
-  { to: "/runtime/sessions/session_1", label: "运行态" }
+  { to: "/runtime/sessions/session_1", label: "运行态" },
+  { to: "/agents", label: "Agent 配置" }
 ];
 
 /**

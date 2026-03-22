@@ -15,6 +15,12 @@ insert into missions (
 )
 returning id, project_id, title, description, source_type, status, admin_agent_id, team_id, repo_binding_id, created_by, created_at, updated_at, completed_at;
 
+-- name: ListMissionsByProject :many
+select id, project_id, title, description, source_type, status, admin_agent_id, team_id, repo_binding_id, created_by, created_at, updated_at, completed_at
+from missions
+where project_id = $1
+order by updated_at desc;
+
 -- name: GetMission :one
 select id, project_id, title, description, source_type, status, admin_agent_id, team_id, repo_binding_id, created_by, created_at, updated_at, completed_at
 from missions

@@ -159,6 +159,47 @@ func (q *Queries) GetMission(ctx context.Context, arg GetMissionParams) (Mission
 	return i, err
 }
 
+const listMissionsByProject = `-- name: ListMissionsByProject :many
+select id, project_id, title, description, source_type, status, admin_agent_id, team_id, repo_binding_id, created_by, created_at, updated_at, completed_at
+from missions
+where project_id = $1
+order by updated_at desc
+`
+
+func (q *Queries) ListMissionsByProject(ctx context.Context, projectID string) ([]Mission, error) {
+	rows, err := q.db.Query(ctx, listMissionsByProject, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Mission
+	for rows.Next() {
+		var i Mission
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.Title,
+			&i.Description,
+			&i.SourceType,
+			&i.Status,
+			&i.AdminAgentID,
+			&i.TeamID,
+			&i.RepoBindingID,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.CompletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateMissionStatus = `-- name: UpdateMissionStatus :one
 update missions
 set

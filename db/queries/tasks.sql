@@ -33,6 +33,12 @@ insert into task_items (
 )
 returning id, board_id, title, type, status, assigned_agent_id, upstream_task_ids_json, downstream_task_ids_json, input_document_version_ids_json, input_repo_candidate_ids_json, definition_of_done_json, created_at, updated_at;
 
+-- name: ListTaskBoardsByMission :many
+select id, mission_id, title, created_at, updated_at
+from task_boards
+where mission_id = $1
+order by created_at asc;
+
 -- name: GetTaskItem :one
 select id, board_id, title, type, status, assigned_agent_id, upstream_task_ids_json, downstream_task_ids_json, input_document_version_ids_json, input_repo_candidate_ids_json, definition_of_done_json, created_at, updated_at
 from task_items

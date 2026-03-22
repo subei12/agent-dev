@@ -10,6 +10,7 @@ type TaskCard = {
 
 type TaskBoardProps = {
   tasks?: TaskCard[];
+  onSelectTask: (taskId: string) => void;
   onClaimTask: (taskId: string) => void;
   onSendToAdmin: (taskId: string) => void;
   onRequestReview: (taskId: string) => void;
@@ -27,6 +28,7 @@ const fallbackTasks: TaskCard[] = [
  */
 export function TaskBoard({
   tasks,
+  onSelectTask,
   onClaimTask,
   onSendToAdmin,
   onRequestReview,
@@ -47,7 +49,7 @@ export function TaskBoard({
       ) : null}
       <div className="task-grid">
         {items.map((task) => (
-          <article key={task.id} className="task-card">
+          <article key={task.id} className="task-card" onClick={() => onSelectTask(task.id)}>
             <div className="task-card__meta">
               <span>{formatTypeLabel(task.type)}</span>
               <span>{formatStatusLabel(task.status)}</span>
