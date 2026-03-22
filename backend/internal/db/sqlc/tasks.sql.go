@@ -442,6 +442,43 @@ func (q *Queries) GetLatestTaskBoardByMission(ctx context.Context, missionID str
 	return i, err
 }
 
+const getMissionTaskByIdentifier = `-- name: GetMissionTaskByIdentifier :one
+select
+  t.id,
+  t.title,
+  t.status,
+  t.assigned_agent_id
+from task_items t
+join task_boards b on b.id = t.board_id
+where b.mission_id = $1
+  and (t.id = $2 or t.title = $2)
+limit 1
+`
+
+type GetMissionTaskByIdentifierParams struct {
+	MissionID string `json:"mission_id"`
+	ID        string `json:"id"`
+}
+
+type GetMissionTaskByIdentifierRow struct {
+	ID              string      `json:"id"`
+	Title           string      `json:"title"`
+	Status          string      `json:"status"`
+	AssignedAgentID pgtype.Text `json:"assigned_agent_id"`
+}
+
+func (q *Queries) GetMissionTaskByIdentifier(ctx context.Context, arg GetMissionTaskByIdentifierParams) (GetMissionTaskByIdentifierRow, error) {
+	row := q.db.QueryRow(ctx, getMissionTaskByIdentifier, arg.MissionID, arg.ID)
+	var i GetMissionTaskByIdentifierRow
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Status,
+		&i.AssignedAgentID,
+	)
+	return i, err
+}
+
 const getTaskItem = `-- name: GetTaskItem :one
 select id, board_id, title, type, status, assigned_agent_id, upstream_task_ids_json, downstream_task_ids_json, input_document_version_ids_json, input_repo_candidate_ids_json, definition_of_done_json, created_at, updated_at
 from task_items

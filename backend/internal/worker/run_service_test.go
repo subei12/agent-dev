@@ -13,6 +13,10 @@ type fakeStore struct {
 	acquireOK    bool
 	completed    bool
 	failed       bool
+	updatedTaskStatus map[string]string
+	resolvedTasks     map[string]TaskTransitionTarget
+	createdClaims     []ClaimTaskInput
+	handoffs          []AdminHandoffInput
 }
 
 // GetClaimExecutionContext 返回请求的资源或值。
@@ -60,6 +64,32 @@ func (f *fakeStore) CreateNodeRun(context.Context, string, string) (NodeRun, err
 
 // UpdateRunStatus 更新请求的资源状态。
 func (f *fakeStore) UpdateRunStatus(context.Context, string, string) error { return nil }
+
+// UpdateTaskStatus 更新请求的资源状态。
+func (f *fakeStore) UpdateTaskStatus(_ context.Context, taskItemID, status string) error {
+	if f.updatedTaskStatus == nil {
+		f.updatedTaskStatus = map[string]string{}
+	}
+	f.updatedTaskStatus[taskItemID] = status
+	return nil
+}
+
+// ResolveTaskByIdentifier 返回 Mission 内部任务引用对应的任务信息。
+func (f *fakeStore) ResolveTaskByIdentifier(_ context.Context, _ string, identifier string) (TaskTransitionTarget, error) {
+	return f.resolvedTasks[identifier], nil
+}
+
+// CreateTaskClaim 创建请求的资源或记录。
+func (f *fakeStore) CreateTaskClaim(_ context.Context, input ClaimTaskInput) error {
+	f.createdClaims = append(f.createdClaims, input)
+	return nil
+}
+
+// CreateAdminHandoff 创建管理员回流记录。
+func (f *fakeStore) CreateAdminHandoff(_ context.Context, input AdminHandoffInput) error {
+	f.handoffs = append(f.handoffs, input)
+	return nil
+}
 
 type fakeLauncher struct {
 	called bool
@@ -152,5 +182,81 @@ func TestClaimAlreadyLockedSkipsExecution(t *testing.T) {
 	}
 	if launcher.called {
 		t.Fatal("did not expect executor launch when lock is not acquired")
+	}
+}
+
+// TestSuccessfulClaimAutoClaimsDownstreamTask 验证成功完成后会自动激活下游任务。
+func TestSuccessfulClaimAutoClaimsDownstreamTask(t *testing.T) {
+	store := &fakeStore{
+		claimContext: ClaimExecutionContext{
+			ClaimID:            "claim_1",
+			MissionID:          "mission_1",
+			TaskItemID:         "task_design",
+			AgentID:            "agent_admin",
+			ExecutorProfileID:  "exec_admin",
+			DownstreamTaskRefs: []string{"开发实现与自测"},
+			AdminAgentID:       "agent_admin",
+		},
+		acquireOK: true,
+		resolvedTasks: map[string]TaskTransitionTarget{
+			"开发实现与自测": {
+				ID:              "task_code",
+				AssignedAgentID: "agent_backend",
+				Status:          "todo",
+			},
+		},
+	}
+	launcher := &fakeLauncher{}
+	svc := NewRunService(store, launcher)
+
+	if err := svc.ExecuteClaimedTask(context.Background(), "claim_1"); err != nil {
+		t.Fatalf("execute claimed task: %v", err)
+	}
+
+	if got := store.updatedTaskStatus["task_design"]; got != "done" {
+		t.Fatalf("expected task_design status done, got %q", got)
+	}
+	if len(store.createdClaims) != 1 {
+		t.Fatalf("expected 1 downstream claim, got %d", len(store.createdClaims))
+	}
+	if store.createdClaims[0].TaskItemID != "task_code" {
+		t.Fatalf("expected downstream task_code, got %q", store.createdClaims[0].TaskItemID)
+	}
+	if store.createdClaims[0].AgentID != "agent_backend" {
+		t.Fatalf("expected downstream agent_backend, got %q", store.createdClaims[0].AgentID)
+	}
+	if got := store.updatedTaskStatus["task_code"]; got != "claimed" {
+		t.Fatalf("expected downstream task claimed, got %q", got)
+	}
+}
+
+// TestSuccessfulClaimWithoutDownstreamReturnsToAdmin 验证无下游时会自动回流管理员。
+func TestSuccessfulClaimWithoutDownstreamReturnsToAdmin(t *testing.T) {
+	store := &fakeStore{
+		claimContext: ClaimExecutionContext{
+			ClaimID:           "claim_1",
+			MissionID:         "mission_1",
+			TaskItemID:        "task_test",
+			AgentID:           "agent_backend",
+			ExecutorProfileID: "exec_backend",
+			AdminAgentID:      "agent_admin",
+		},
+		acquireOK: true,
+	}
+	launcher := &fakeLauncher{}
+	svc := NewRunService(store, launcher)
+
+	if err := svc.ExecuteClaimedTask(context.Background(), "claim_1"); err != nil {
+		t.Fatalf("execute claimed task: %v", err)
+	}
+
+	if got := store.updatedTaskStatus["task_test"]; got != "handoff_pending" {
+		t.Fatalf("expected task_test status handoff_pending, got %q", got)
+	}
+	if len(store.handoffs) != 1 {
+		t.Fatalf("expected 1 admin handoff, got %d", len(store.handoffs))
+	}
+	if store.handoffs[0].AdminAgentID != "agent_admin" {
+		t.Fatalf("expected admin handoff to agent_admin, got %q", store.handoffs[0].AdminAgentID)
 	}
 }

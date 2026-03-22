@@ -32,7 +32,7 @@ func NewWorker(cfg platformconfig.Config) (*WorkerApp, error) {
 	manager := executor.NewManager(
 		executor.NewBaseAdapter("codex_cli"),
 		runtimeService,
-		executor.NewPtyRunner(),
+		executor.NewStreamRunner(),
 	)
 	repo := worker.NewRepository(pool)
 	runService := worker.NewRunService(repo, worker.NewExecutorLauncher(manager))

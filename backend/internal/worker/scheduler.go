@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"log"
 	"time"
 )
 
@@ -35,7 +36,8 @@ func (s *Scheduler) PollOnce(ctx context.Context) error {
 
 	for _, claimID := range claimIDs {
 		if err := s.dispatcher.DispatchClaim(ctx, claimID); err != nil {
-			return err
+			log.Printf("worker dispatch claim %s failed: %v", claimID, err)
+			continue
 		}
 	}
 	return nil

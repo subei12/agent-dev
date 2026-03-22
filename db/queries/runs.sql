@@ -36,12 +36,16 @@ select
   b.mission_id,
   c.task_item_id,
   c.agent_id,
+  m.admin_agent_id,
+  t.title as task_title,
+  t.downstream_task_ids_json,
   a.executor_profile_id,
   ep.command,
   ep.args_json
 from task_claims c
 join task_items t on t.id = c.task_item_id
 join task_boards b on b.id = t.board_id
+join missions m on m.id = b.mission_id
 join agents a on a.id = c.agent_id
 join executor_profiles ep on ep.id = a.executor_profile_id
 where c.id = $1;

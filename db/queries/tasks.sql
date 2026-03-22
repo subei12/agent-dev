@@ -44,6 +44,18 @@ select id, board_id, title, type, status, assigned_agent_id, upstream_task_ids_j
 from task_items
 where id = $1;
 
+-- name: GetMissionTaskByIdentifier :one
+select
+  t.id,
+  t.title,
+  t.status,
+  t.assigned_agent_id
+from task_items t
+join task_boards b on b.id = t.board_id
+where b.mission_id = $1
+  and (t.id = $2 or t.title = $2)
+limit 1;
+
 -- name: ListTaskItemsByBoard :many
 select id, board_id, title, type, status, assigned_agent_id, upstream_task_ids_json, downstream_task_ids_json, input_document_version_ids_json, input_repo_candidate_ids_json, definition_of_done_json, created_at, updated_at
 from task_items

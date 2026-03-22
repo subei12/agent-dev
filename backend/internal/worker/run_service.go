@@ -12,13 +12,16 @@ import (
 )
 
 type ClaimExecutionContext struct {
-	ClaimID           string
-	MissionID         string
-	TaskItemID        string
-	AgentID           string
-	ExecutorProfileID string
-	Command           string
-	Args              []string
+	ClaimID            string
+	MissionID          string
+	TaskItemID         string
+	TaskTitle          string
+	AgentID            string
+	AdminAgentID       string
+	DownstreamTaskRefs []string
+	ExecutorProfileID  string
+	Command            string
+	Args               []string
 }
 
 type Run struct {
@@ -43,6 +46,27 @@ type ExecutorTaskInput struct {
 	Args              []string
 }
 
+type TaskTransitionTarget struct {
+	ID              string
+	Title           string
+	Status          string
+	AssignedAgentID string
+}
+
+type ClaimTaskInput struct {
+	TaskItemID   string
+	AgentID      string
+	ClaimReason  string
+}
+
+type AdminHandoffInput struct {
+	MissionID     string
+	TaskItemID    string
+	FromAgentID   string
+	AdminAgentID  string
+	Summary       string
+}
+
 type Store interface {
 	GetClaimExecutionContext(context.Context, string) (ClaimExecutionContext, error)
 	AcquireClaimExecution(context.Context, string, string, time.Time) (bool, error)
@@ -52,6 +76,10 @@ type Store interface {
 	CreateRun(context.Context, string, string) (Run, error)
 	CreateNodeRun(context.Context, string, string) (NodeRun, error)
 	UpdateRunStatus(context.Context, string, string) error
+	UpdateTaskStatus(context.Context, string, string) error
+	ResolveTaskByIdentifier(context.Context, string, string) (TaskTransitionTarget, error)
+	CreateTaskClaim(context.Context, ClaimTaskInput) error
+	CreateAdminHandoff(context.Context, AdminHandoffInput) error
 }
 
 type Launcher interface {
@@ -103,7 +131,7 @@ func (s *RunService) ExecuteClaimedTask(ctx context.Context, claimID string) err
 		return err
 	}
 
-	// 4. 若执行失败则回退 claim 并记录错误；成功则完成 run 和 claim。
+	// 4. 若执行失败则回退 claim 并记录错误；成功则更新任务状态并推进后续任务。
 	if err := s.launcher.RunTask(ctx, ExecutorTaskInput{
 		MissionID:         execCtx.MissionID,
 		TaskItemID:        execCtx.TaskItemID,
@@ -120,7 +148,61 @@ func (s *RunService) ExecuteClaimedTask(ctx context.Context, claimID string) err
 	if err := s.store.UpdateRunStatus(ctx, run.ID, "succeeded"); err != nil {
 		return err
 	}
+	if err := s.advanceTaskChain(ctx, execCtx); err != nil {
+		return err
+	}
 	return s.store.CompleteClaim(ctx, claimID)
+}
+
+// advanceTaskChain 在当前任务成功后自动激活下游任务或回流管理员。
+func (s *RunService) advanceTaskChain(ctx context.Context, execCtx ClaimExecutionContext) error {
+	// 1. 有下游任务时，先完成当前任务，再为下游创建 claim。
+	if len(execCtx.DownstreamTaskRefs) > 0 {
+		if err := s.store.UpdateTaskStatus(ctx, execCtx.TaskItemID, "done"); err != nil {
+			return err
+		}
+
+		for _, taskRef := range execCtx.DownstreamTaskRefs {
+			target, err := s.store.ResolveTaskByIdentifier(ctx, execCtx.MissionID, taskRef)
+			if err != nil {
+				return err
+			}
+			if target.Status != "todo" {
+				continue
+			}
+			if target.AssignedAgentID == "" {
+				continue
+			}
+			if err := s.store.UpdateTaskStatus(ctx, target.ID, "claimed"); err != nil {
+				return err
+			}
+			if err := s.store.CreateTaskClaim(ctx, ClaimTaskInput{
+				TaskItemID:  target.ID,
+				AgentID:     target.AssignedAgentID,
+				ClaimReason: "auto progression",
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	// 2. 无下游且当前不是管理员任务时，自动回流管理员 Agent 等待裁决。
+	if execCtx.AdminAgentID != "" && execCtx.AgentID != execCtx.AdminAgentID {
+		if err := s.store.UpdateTaskStatus(ctx, execCtx.TaskItemID, "handoff_pending"); err != nil {
+			return err
+		}
+		return s.store.CreateAdminHandoff(ctx, AdminHandoffInput{
+			MissionID:    execCtx.MissionID,
+			TaskItemID:   execCtx.TaskItemID,
+			FromAgentID:  execCtx.AgentID,
+			AdminAgentID: execCtx.AdminAgentID,
+			Summary:      "当前步骤已完成，自动回流管理员 Agent 决策是否结项或追加检查。",
+		})
+	}
+
+	// 3. 管理员任务无下游时，先标记为完成，后续由管理员决策链补结项。
+	return s.store.UpdateTaskStatus(ctx, execCtx.TaskItemID, "done")
 }
 
 // runHeartbeatLoop 在执行上下文结束前持续刷新 claim 心跳。
@@ -158,13 +240,16 @@ func (r *Repository) GetClaimExecutionContext(ctx context.Context, claimID strin
 		return ClaimExecutionContext{}, err
 	}
 	return ClaimExecutionContext{
-		ClaimID:           row.ClaimID,
-		MissionID:         row.MissionID,
-		TaskItemID:        row.TaskItemID,
-		AgentID:           row.AgentID,
-		ExecutorProfileID: row.ExecutorProfileID,
-		Command:           row.Command,
-		Args:              jsonStringSlice(row.ArgsJson),
+		ClaimID:            row.ClaimID,
+		MissionID:          row.MissionID,
+		TaskItemID:         row.TaskItemID,
+		TaskTitle:          row.TaskTitle,
+		AgentID:            row.AgentID,
+		AdminAgentID:       row.AdminAgentID,
+		DownstreamTaskRefs: jsonStringSlice(row.DownstreamTaskIdsJson),
+		ExecutorProfileID:  row.ExecutorProfileID,
+		Command:            row.Command,
+		Args:               jsonStringSlice(row.ArgsJson),
 	}, nil
 }
 
@@ -249,6 +334,64 @@ func (r *Repository) UpdateRunStatus(ctx context.Context, runID, status string) 
 	_, err := r.queries.UpdateRunStatus(ctx, sqlc.UpdateRunStatusParams{
 		ID:     runID,
 		Status: status,
+	})
+	return err
+}
+
+// UpdateTaskStatus 更新请求的资源状态。
+func (r *Repository) UpdateTaskStatus(ctx context.Context, taskItemID, status string) error {
+	_, err := sqlc.New(r.pool).UpdateTaskItemStatus(ctx, sqlc.UpdateTaskItemStatusParams{
+		ID:     taskItemID,
+		Status: status,
+	})
+	return err
+}
+
+// ResolveTaskByIdentifier 返回 Mission 内的目标任务信息。
+func (r *Repository) ResolveTaskByIdentifier(ctx context.Context, missionID, identifier string) (TaskTransitionTarget, error) {
+	row, err := sqlc.New(r.pool).GetMissionTaskByIdentifier(ctx, sqlc.GetMissionTaskByIdentifierParams{
+		MissionID: missionID,
+		ID:        identifier,
+	})
+	if err != nil {
+		return TaskTransitionTarget{}, err
+	}
+	return TaskTransitionTarget{
+		ID:              row.ID,
+		Title:           row.Title,
+		Status:          row.Status,
+		AssignedAgentID: stringValue(row.AssignedAgentID),
+	}, nil
+}
+
+// CreateTaskClaim 创建自动推进产生的任务 claim。
+func (r *Repository) CreateTaskClaim(ctx context.Context, input ClaimTaskInput) error {
+	_, err := sqlc.New(r.pool).CreateTaskClaim(ctx, sqlc.CreateTaskClaimParams{
+		ID:          uuid.NewString(),
+		TaskItemID:  input.TaskItemID,
+		AgentID:     input.AgentID,
+		Status:      "active",
+		ClaimReason: textValue(input.ClaimReason),
+	})
+	return err
+}
+
+// CreateAdminHandoff 在无下游时创建回流管理员的 handoff 记录。
+func (r *Repository) CreateAdminHandoff(ctx context.Context, input AdminHandoffInput) error {
+	_, err := sqlc.New(r.pool).CreateTaskHandoff(ctx, sqlc.CreateTaskHandoffParams{
+		ID:                         uuid.NewString(),
+		TaskItemID:                 input.TaskItemID,
+		FromAgentID:                input.FromAgentID,
+		ToAgentID:                  textValue(input.AdminAgentID),
+		ToAdminAgent:               true,
+		Summary:                    input.Summary,
+		OutputDocumentVersionIdsJson: []byte("[]"),
+		OutputRepoCandidateIdsJson:   []byte("[]"),
+		OutputArtifactVersionIdsJson: []byte("[]"),
+		ValidationSummary:            textValue(""),
+		RiskSummary:                  textValue(""),
+		RecommendedNextAction:        textValue("管理员 Agent 判断是否完成或追加检查"),
+		Status:                       "pending",
 	})
 	return err
 }

@@ -41,6 +41,7 @@ type documentService interface {
 
 type taskService interface {
 	CreateBoard(context.Context, task.CreateBoardCmd) (task.TaskBoard, error)
+	Claim(context.Context, task.ClaimTaskCmd) (task.TaskClaim, error)
 }
 
 type service struct {
@@ -172,7 +173,7 @@ func (b *defaultBootstrapper) Bootstrap(ctx context.Context, mission Mission) er
 	}
 
 	// 3. 按设计 -> 开发 -> 测试 -> 复核的顺序生成内部执行任务，供多 Agent 接力处理。
-	_, err = b.tasks.CreateBoard(ctx, task.CreateBoardCmd{
+	board, err := b.tasks.CreateBoard(ctx, task.CreateBoardCmd{
 		MissionID: mission.ID,
 		Title:     "内部执行任务",
 		Items: []task.CreateTaskItemCmd{
@@ -211,6 +212,19 @@ func (b *defaultBootstrapper) Bootstrap(ctx context.Context, mission Mission) er
 				DefinitionOfDone:        mustJSON(map[string]string{"done": "管理员确认完成或追加检查"}),
 			},
 		},
+	})
+	if err != nil {
+		return err
+	}
+
+	// 4. 自动领取第一步，让 Worker 可以从管理员 Agent 的方案收敛阶段开始推进。
+	if len(board.Items) == 0 {
+		return nil
+	}
+	_, err = b.tasks.Claim(ctx, task.ClaimTaskCmd{
+		TaskItemID:  board.Items[0].ID,
+		AgentID:     board.Items[0].AssignedAgentID,
+		ClaimReason: "bootstrap auto claim",
 	})
 	return err
 }

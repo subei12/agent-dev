@@ -124,17 +124,43 @@ func (f *fakeDocumentService) AdoptVersion(_ context.Context, documentID, versio
 }
 
 type fakeTaskService struct {
-	boardCmd task.CreateBoardCmd
+	boardCmd    task.CreateBoardCmd
+	claimCmd    task.ClaimTaskCmd
 }
 
 // CreateBoard 创建请求的资源或记录。
 func (f *fakeTaskService) CreateBoard(_ context.Context, cmd task.CreateBoardCmd) (task.TaskBoard, error) {
 	f.boardCmd = cmd
+	items := make([]task.TaskItem, 0, len(cmd.Items))
+	for index, item := range cmd.Items {
+		items = append(items, task.TaskItem{
+			ID:              "task_" + item.Title,
+			Title:           item.Title,
+			Type:            item.Type,
+			Status:          "todo",
+			AssignedAgentID: item.AssignedAgentID,
+			BoardID:         "board_1",
+		})
+		if index == 0 {
+			items[index].ID = "task_plan"
+		}
+	}
 	return task.TaskBoard{
 		ID:        "board_1",
 		MissionID: cmd.MissionID,
 		Title:     cmd.Title,
-		Items:     nil,
+		Items:     items,
+	}, nil
+}
+
+// Claim 创建请求的资源或记录。
+func (f *fakeTaskService) Claim(_ context.Context, cmd task.ClaimTaskCmd) (task.TaskClaim, error) {
+	f.claimCmd = cmd
+	return task.TaskClaim{
+		ID:         "claim_1",
+		TaskItemID: cmd.TaskItemID,
+		AgentID:    cmd.AgentID,
+		Status:     "active",
 	}, nil
 }
 
@@ -236,6 +262,12 @@ func TestDefaultMissionBootstrapperCreatesDiscussionDocumentAndTasks(t *testing.
 	}
 	if taskSvc.boardCmd.Items[3].Type != "review" {
 		t.Fatalf("expected fourth task type review, got %s", taskSvc.boardCmd.Items[3].Type)
+	}
+	if taskSvc.claimCmd.TaskItemID != "task_plan" {
+		t.Fatalf("expected first claimed task task_plan, got %s", taskSvc.claimCmd.TaskItemID)
+	}
+	if taskSvc.claimCmd.AgentID != "agent_admin" {
+		t.Fatalf("expected auto claim assigned to agent_admin, got %s", taskSvc.claimCmd.AgentID)
 	}
 }
 
