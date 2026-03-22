@@ -7,7 +7,8 @@ test("app shell shows mission navigation", async ({ page }) => {
   await expect(nav).toBeVisible();
   await expect(nav.getByRole("link", { name: "首页", exact: true })).toBeVisible();
   await expect(nav.getByRole("link", { name: "运行态", exact: true })).toBeVisible();
-  await expect(page.getByRole("main").getByRole("heading", { name: "任务指挥台" })).toBeVisible();
+  await expect(page.getByRole("main").getByRole("heading", { name: "Mission 总览" })).toBeVisible();
+  await expect(page.getByRole("main").getByText("总任务看板", { exact: true }).first()).toBeVisible();
 });
 
 test("mission page shows documents and task board", async ({ page }) => {

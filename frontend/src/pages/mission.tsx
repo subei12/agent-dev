@@ -33,10 +33,8 @@ import { MissionOverview } from "../features/missions/mission-overview";
 import { TaskComposer } from "../features/tasks/task-composer";
 import { TaskDetailPanel } from "../features/tasks/task-detail-panel";
 import { TaskBoard } from "../features/tasks/task-board";
-import { AgentRuntimeBoard } from "../features/runtime/agent-runtime-board";
-import { RuntimeEventTimeline } from "../features/runtime/runtime-event-timeline";
 import { TaskRuntimePanel } from "../features/runtime/task-runtime-panel";
-import { getRuntimeEvents, getRuntimeSession, getTranscript, getTranscriptAccessAudits } from "../lib/api";
+import { getRuntimeEvents, getTranscript, getTranscriptAccessAudits } from "../lib/api";
 
 const projectId = "proj_1";
 
@@ -144,7 +142,9 @@ export function MissionPage() {
   const taskMutation = useMutation({
     mutationFn: (payload: { title: string; type: string; assignedAgentId?: string }) =>
       createTask(projectId, missionId, payload),
-    onSuccess: async () => {
+    onSuccess: async (task) => {
+      setSelectedTaskId(task.id);
+      setTaskActionMessage(`已新增任务：${task.title}`);
       await queryClient.invalidateQueries({ queryKey: ["mission-task-board", missionId] });
     }
   });
@@ -214,50 +214,60 @@ export function MissionPage() {
       }
     >
       <MissionOverview mission={missionQuery.data ?? null} />
-      <MissionActionRail
-        archiveStatus={archiveStatus}
-        isArchiving={archiveMutation.isPending}
-        onArchive={() => archiveMutation.mutate()}
-      />
-      <TaskComposer
-        agents={agentsQuery.data ?? []}
-        isSubmitting={taskMutation.isPending}
-        onCreateTask={(payload) => taskMutation.mutate(payload)}
-      />
-      <TaskDetailPanel task={selectedTask} documents={documentsQuery.data ?? []} />
-      <MissionApprovalPanel approvals={approvalQuery.data ?? []} />
-      <MissionArchivePanel archive={archiveQuery.data ?? null} />
-      <DocumentList
-        documents={documentsQuery.data ?? []}
-        isSubmitting={documentMutation.isPending || versionMutation.isPending || adoptMutation.isPending}
-        versionsByDocument={versionsByDocument}
-        onCreateDocument={(title, kind) => documentMutation.mutate({ title, kind })}
-        onCreateVersion={(documentId, contentText) => versionMutation.mutate({ documentId, contentText })}
-        onAdoptVersion={(documentId, versionId) => adoptMutation.mutate({ documentId, versionId })}
-      />
-      <DiscussionSessionPanel
-        sessions={sessionsQuery.data ?? []}
-        isSubmitting={discussionMutation.isPending}
-        onCreateSession={(topic) => discussionMutation.mutate(topic)}
-      />
-      <TaskBoard
-        tasks={taskBoardQuery.data?.items}
-        taskActionMessage={taskActionMessage}
-        onSelectTask={(taskId) => setSelectedTaskId(taskId)}
-        onClaimTask={(taskId) => claimMutation.mutate(taskId)}
-        onSendToAdmin={(taskId) => handoffMutation.mutate(taskId)}
-        onRequestReview={(taskId) => checkpointMutation.mutate(taskId)}
-      />
-      <AgentRuntimeBoard
-        runtimes={runtimeItems}
-        onSelectRuntime={(sessionId) => setSelectedSessionId(sessionId)}
-      />
-      <TaskRuntimePanel
-        runtimes={runtimeItems}
-        events={sessionEventsQuery.data ?? []}
-        transcript={sessionTranscriptQuery.data ?? null}
-        audits={sessionAuditsQuery.data ?? []}
-      />
+      <div className="mission-workspace-grid">
+        <div className="workspace-column workspace-column--tasks">
+          <TaskComposer
+            agents={agentsQuery.data ?? []}
+            isSubmitting={taskMutation.isPending}
+            onCreateTask={(payload) => taskMutation.mutate(payload)}
+          />
+          <TaskBoard
+            tasks={taskBoardQuery.data?.items}
+            selectedTaskId={selectedTask?.id ?? null}
+            taskActionMessage={taskActionMessage}
+            onSelectTask={(taskId) => setSelectedTaskId(taskId)}
+            onClaimTask={(taskId) => claimMutation.mutate(taskId)}
+            onSendToAdmin={(taskId) => handoffMutation.mutate(taskId)}
+            onRequestReview={(taskId) => checkpointMutation.mutate(taskId)}
+          />
+        </div>
+
+        <div className="workspace-column workspace-column--detail">
+          <TaskDetailPanel task={selectedTask} documents={documentsQuery.data ?? []} />
+          <DocumentList
+            documents={documentsQuery.data ?? []}
+            isSubmitting={documentMutation.isPending || versionMutation.isPending || adoptMutation.isPending}
+            versionsByDocument={versionsByDocument}
+            onCreateDocument={(title, kind) => documentMutation.mutate({ title, kind })}
+            onCreateVersion={(documentId, contentText) => versionMutation.mutate({ documentId, contentText })}
+            onAdoptVersion={(documentId, versionId) => adoptMutation.mutate({ documentId, versionId })}
+          />
+        </div>
+
+        <div className="workspace-column workspace-column--support">
+          <TaskRuntimePanel
+            agents={agentsQuery.data ?? []}
+            runtimes={runtimeItems}
+            selectedSessionId={selectedSessionId}
+            events={sessionEventsQuery.data ?? []}
+            transcript={sessionTranscriptQuery.data ?? null}
+            audits={sessionAuditsQuery.data ?? []}
+            onSelectRuntime={(sessionId) => setSelectedSessionId(sessionId)}
+          />
+          <DiscussionSessionPanel
+            sessions={sessionsQuery.data ?? []}
+            isSubmitting={discussionMutation.isPending}
+            onCreateSession={(topic) => discussionMutation.mutate(topic)}
+          />
+          <MissionActionRail
+            archiveStatus={archiveStatus}
+            isArchiving={archiveMutation.isPending}
+            onArchive={() => archiveMutation.mutate()}
+          />
+          <MissionApprovalPanel approvals={approvalQuery.data ?? []} />
+          <MissionArchivePanel archive={archiveQuery.data ?? null} />
+        </div>
+      </div>
     </PageShell>
   );
 }

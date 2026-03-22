@@ -24,41 +24,52 @@ export function HomePage() {
   const boardsByMission = Object.fromEntries(
     (missionsQuery.data ?? []).map((mission, index) => [mission.id, boardQueries[index]?.data ?? null])
   );
+  const totalTaskCount = Object.values(boardsByMission).reduce((count, board) => count + (board?.items?.length ?? 0), 0);
 
   return (
     <PageShell
-      eyebrow="运行看板"
-      title="任务指挥台"
-      description="面向多 Agent 讨论、执行、运行日志和归档决策的统一工作入口。"
+      eyebrow="总任务看板"
+      title="Mission 总览"
+      description="首页先展示所有 Mission 的任务进度，再进入单个 Mission 的作业空间。"
       aside={
         <div className="hero-stat">
-          <span>当前模式</span>
-          <strong>治理优先</strong>
+          <span>任务总数</span>
+          <strong>{totalTaskCount}</strong>
         </div>
       }
     >
-      <article className="panel">
-        <div className="panel-header">
-          <p className="panel-kicker">启动入口</p>
-          <span className="badge">v2 工作台</span>
-        </div>
-        <h2>从讨论、拆解到执行与归档，都在同一个工作台里完成。</h2>
-        <p className="panel-copy">
-          当前页面已经接入 Mission 工作台和运行会话检视页，方便直接联调核心流程。
-        </p>
-        <div className="action-row">
-          <Link className="action-link" to="/missions/mission_1">
-            打开 Mission 工作台
-          </Link>
-          <Link className="action-link action-link--ghost" to="/agents">
-            管理 Agent 配置
-          </Link>
-          <Link className="action-link action-link--ghost" to="/runtime/sessions/session_1">
-            查看运行会话
-          </Link>
-        </div>
-      </article>
       <MissionBoard missions={missionsQuery.data ?? []} boardsByMission={boardsByMission} />
+      <section className="home-top-grid">
+        <article className="panel">
+          <div className="panel-header">
+            <p className="panel-kicker">快速入口</p>
+            <span className="badge">工作台</span>
+          </div>
+          <h2>从首页直接进入任务，而不是先看一堆对象卡片。</h2>
+          <p className="panel-copy">首页现在优先展示 Mission 任务总览和快捷入口，方便直接切入具体作业。</p>
+          <div className="action-row">
+            <Link className="action-link" to="/missions/mission_1">
+              打开任务页
+            </Link>
+            <Link className="action-link action-link--ghost" to="/agents">
+              管理 Agent
+            </Link>
+          </div>
+        </article>
+        <article className="panel">
+          <div className="panel-header">
+            <p className="panel-kicker">运行入口</p>
+            <span className="badge">日志</span>
+          </div>
+          <h2>运行日志和 transcript 入口放在固定位置。</h2>
+          <p className="panel-copy">如果要排查 Agent 执行过程，可以直接进入运行会话查看事件流、转录和访问审计。</p>
+          <div className="action-row">
+            <Link className="action-link action-link--ghost" to="/runtime/sessions/session_1">
+              查看运行会话
+            </Link>
+          </div>
+        </article>
+      </section>
     </PageShell>
   );
 }
