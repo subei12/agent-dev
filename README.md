@@ -20,6 +20,132 @@
 4. 使用 `make test-backend` 运行后端测试。
 5. 进入 `frontend/` 后使用 `corepack pnpm typecheck` 和 `corepack pnpm test:e2e` 验证前端。
 
+## 快速启动
+
+### 1. 启动本地依赖
+
+在仓库根目录执行：
+
+```bash
+make dev-up
+```
+
+这会启动：
+
+- PostgreSQL：`localhost:5432`
+- MinIO：
+  - API：`http://localhost:9000`
+  - Console：`http://localhost:9001`
+
+### 2. 配置环境变量
+
+后端默认依赖下面这些环境变量：
+
+```bash
+export APP_ENV=development
+export APP_ADDR=:8080
+export DATABASE_URL=postgres://postgres:postgres@localhost:5432/agent_platform?sslmode=disable
+export S3_ENDPOINT=http://localhost:9000
+export S3_ACCESS_KEY=minio
+export S3_SECRET_KEY=minio123
+export S3_BUCKET=agent-platform-dev
+```
+
+也可以直接参考仓库根目录的 `.env.example`。
+
+### 3. 启动后端 API
+
+在一个终端里执行：
+
+```bash
+cd backend
+go run ./cmd/api
+```
+
+默认监听：
+
+- API：`http://127.0.0.1:8080`
+- Health：`http://127.0.0.1:8080/healthz`
+
+### 4. 启动 Worker
+
+在另一个终端里执行：
+
+```bash
+cd backend
+go run ./cmd/worker
+```
+
+Worker 会轮询 active claim，并触发任务执行链路。
+
+### 5. 启动前端
+
+在第三个终端里执行：
+
+```bash
+cd frontend
+corepack pnpm install
+corepack pnpm dev
+```
+
+默认访问：
+
+- 前端：`http://127.0.0.1:5173`
+
+### 6. 写入演示数据
+
+在任意终端里执行：
+
+```bash
+cd backend
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/agent_platform?sslmode=disable go run ./scripts/seed_demo_data
+```
+
+这会写入一套演示数据：
+
+- Project：`proj_1`
+- Mission：`mission_1`
+
+### 7. 生成一条新的 runtime session 回放
+
+```bash
+cd backend
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/agent_platform?sslmode=disable go run ./scripts/replay_executor_session
+```
+
+这会生成一条新的 executor session，方便你验证 runtime board、transcript 和 SSE 刷新。
+
+## 启动后建议验证
+
+### 后端验证
+
+```bash
+cd backend
+go test ./...
+```
+
+### 前端类型检查
+
+```bash
+cd frontend
+corepack pnpm typecheck
+```
+
+### 前端端到端
+
+```bash
+cd frontend
+corepack pnpm test:e2e
+```
+
+### 手工访问建议
+
+启动前后端并 seed 数据后，可以先看：
+
+- `http://127.0.0.1:5173/`
+- `http://127.0.0.1:5173/missions/mission_1`
+- `http://127.0.0.1:5173/runtime/sessions/session_1`
+
 本地演示脚本：
 
 1. `cd backend && DATABASE_URL=postgres://postgres:postgres@localhost:5432/agent_platform?sslmode=disable go run ./scripts/seed_demo_data`
