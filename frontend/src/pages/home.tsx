@@ -1,10 +1,11 @@
-import { useQueries, useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate } from "react-router-dom";
 
 import { PageShell } from "../components/page-shell";
-import { getMissions, getTaskBoard } from "../lib/api";
+import { createMission, getMissions, getTaskBoard } from "../lib/api";
 import { formatStatusLabel, formatTypeLabel } from "../lib/display";
 import { MissionBoard } from "../features/missions/mission-board";
+import { MissionRequestComposer } from "../features/missions/mission-request-composer";
 
 const projectId = "proj_1";
 
@@ -12,6 +13,8 @@ const projectId = "proj_1";
  * HomePage 渲染当前路由对应的页面级工作区。
  */
 export function HomePage() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const missionsQuery = useQuery({
     queryKey: ["missions"],
     queryFn: () => getMissions(projectId)
@@ -38,11 +41,19 @@ export function HomePage() {
   const spotlightMission = missionsQuery.data?.[0] ?? null;
   const spotlightTasks = spotlightMission ? boardsByMission[spotlightMission.id]?.items ?? [] : [];
 
+  const missionMutation = useMutation({
+    mutationFn: (payload: { title: string; description: string }) => createMission(projectId, payload),
+    onSuccess: async (mission) => {
+      await queryClient.invalidateQueries({ queryKey: ["missions"] });
+      navigate(`/missions/${mission.id}`);
+    }
+  });
+
   return (
     <PageShell
       eyebrow="总任务看板"
       title="任务指挥台"
-      description="首页先看整体任务脉冲，再快速进入具体 Mission 推进开发、评审和归档。"
+      description="用户只提交一个需求，管理员 Agent 再组织设计、开发、测试和评审等内部执行任务。"
       aside={
         <div className="hero-stat">
           <span>任务总数</span>
@@ -50,6 +61,10 @@ export function HomePage() {
         </div>
       }
     >
+      <MissionRequestComposer
+        isSubmitting={missionMutation.isPending}
+        onCreateMission={(payload) => missionMutation.mutate(payload)}
+      />
       <section className="dashboard-summary-grid">
         <article className="panel summary-card">
           <p className="panel-kicker">活跃 Mission</p>
@@ -98,7 +113,7 @@ export function HomePage() {
           </div>
           <div className="action-row">
             <Link className="action-link" to="/missions/mission_1">
-              进入工作台
+              查看当前 Mission
             </Link>
             <Link className="action-link action-link--ghost" to="/runtime/sessions/session_1">
               查看运行日志

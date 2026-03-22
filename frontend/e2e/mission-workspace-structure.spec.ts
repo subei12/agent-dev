@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("mission workspace supports creating tasks and expanding transcript only on demand", async ({
+test("mission workspace shows internal execution tasks and expands transcript only on demand", async ({
   page
 }) => {
   const taskBoard = {
@@ -158,22 +158,6 @@ test("mission workspace supports creating tasks and expanding transcript only on
     await route.fulfill({ json: taskBoard });
   });
 
-  await page.route("**/api/projects/proj_1/missions/mission_1/tasks", async (route) => {
-    const body = JSON.parse(route.request().postData() ?? "{}");
-    const createdTask = {
-      id: "task_review",
-      title: body.title,
-      type: body.type,
-      status: "todo",
-      assignedAgentId: body.assignedAgentId
-    };
-    taskBoard.items = [...taskBoard.items, createdTask];
-    await route.fulfill({
-      status: 201,
-      json: createdTask
-    });
-  });
-
   await page.route("**/api/projects/proj_1/missions/mission_1/agent-runtimes", async (route) => {
     await route.fulfill({ json: runtimes });
   });
@@ -238,17 +222,9 @@ test("mission workspace supports creating tasks and expanding transcript only on
 
   await page.goto("/missions/mission_1");
 
-  await page.getByLabel("任务标题").fill("补充首页总看板摘要");
-  await page.getByLabel("任务类型").selectOption("design");
-  await page.getByLabel("负责 Agent").selectOption("agent_reviewer");
-  await page.getByRole("button", { name: "新增任务" }).click();
-
-  const createdTaskCard = page.locator(".task-list-item", {
-    hasText: "补充首页总看板摘要"
-  });
-  await expect(createdTaskCard).toBeVisible();
-  await expect(createdTaskCard).toContainText("设计任务");
-  await expect(createdTaskCard).toContainText("待开始");
+  await expect(page.getByText("内部执行任务", { exact: true })).toBeVisible();
+  await expect(page.getByText("这些任务由管理员 Agent 拆解后分派给不同执行 Agent。")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "实现运行态观测" }).first()).toBeVisible();
 
   await page.getByRole("button", { name: /评审 Agent/ }).click();
 

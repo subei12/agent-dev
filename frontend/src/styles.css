@@ -270,6 +270,7 @@ textarea {
 
 .dashboard-summary-grid,
 .dashboard-main-grid,
+.dashboard-request-card,
 .mission-layout,
 .mission-support-grid,
 .detail-metrics,
@@ -281,6 +282,12 @@ textarea {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1.2rem;
+}
+
+.dashboard-request-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
 }
 
 .summary-card h2 {

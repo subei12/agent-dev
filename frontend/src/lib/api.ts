@@ -221,6 +221,24 @@ export async function getTaskBoard(projectId: string, missionId: string): Promis
   }
 }
 
+export function createMission(
+  projectId: string,
+  payload: {
+    title: string;
+    description: string;
+  }
+) {
+  return send<Mission>(`/api/projects/${projectId}/missions`, "POST", {
+    title: payload.title,
+    description: payload.description,
+    sourceType: "project_requirement",
+    teamId: "team_1",
+    repoBindingId: "repo_1",
+    adminAgentId: "agent_admin",
+    createdBy: ACTOR_ID
+  });
+}
+
 export function createTask(projectId: string, missionId: string, payload: {
   title: string;
   type: string;

@@ -9,7 +9,6 @@ import {
   createDiscussionSession,
   createDocument,
   createDocumentVersion,
-  createTask,
   getDiscussionSessions,
   getDocumentVersions,
   getAgentConfigs,
@@ -30,7 +29,6 @@ import { MissionActionRail } from "../features/missions/mission-action-rail";
 import { MissionApprovalPanel } from "../features/missions/mission-approval-panel";
 import { MissionArchivePanel } from "../features/missions/mission-archive-panel";
 import { MissionOverview } from "../features/missions/mission-overview";
-import { TaskComposer } from "../features/tasks/task-composer";
 import { TaskDetailPanel } from "../features/tasks/task-detail-panel";
 import { TaskBoard } from "../features/tasks/task-board";
 import { TaskRuntimePanel } from "../features/runtime/task-runtime-panel";
@@ -140,16 +138,6 @@ export function MissionPage() {
       await queryClient.invalidateQueries({ queryKey: ["mission-task-board", missionId] });
     }
   });
-  const taskMutation = useMutation({
-    mutationFn: (payload: { title: string; type: string; assignedAgentId?: string }) =>
-      createTask(projectId, missionId, payload),
-    onSuccess: async (task) => {
-      setSelectedTaskId(task.id);
-      setTaskActionMessage(`已新增任务：${task.title}`);
-      await queryClient.invalidateQueries({ queryKey: ["mission-task-board", missionId] });
-    }
-  });
-
   const handoffMutation = useMutation({
     mutationFn: (taskId: string) => sendTaskToAdmin(projectId, missionId, taskId),
     onSuccess: async () => {
@@ -219,27 +207,22 @@ export function MissionPage() {
         <div className="workspace-column workspace-column--tasks">
           <section className="panel mission-board-shell">
             <div className="panel-header">
-              <p className="panel-kicker">任务看板</p>
+              <p className="panel-kicker">内部执行任务</p>
               <span className="badge">{taskBoardQuery.data?.items?.length ?? 0} 个任务</span>
             </div>
             <div className="mission-toolbar">
               <div className="mission-toolbar__chip">当前任务：{selectedTask?.title ?? "等待选择"}</div>
-              <div className="mission-toolbar__chip">点击任务卡片后，在右侧查看详情与运行日志</div>
+              <div className="mission-toolbar__chip">这些任务由管理员 Agent 拆解后分派给不同执行 Agent。</div>
             </div>
-          <TaskComposer
-            agents={agentsQuery.data ?? []}
-            isSubmitting={taskMutation.isPending}
-            onCreateTask={(payload) => taskMutation.mutate(payload)}
-          />
-          <TaskBoard
-            tasks={taskBoardQuery.data?.items}
-            selectedTaskId={selectedTask?.id ?? null}
-            taskActionMessage={taskActionMessage}
-            onSelectTask={(taskId) => setSelectedTaskId(taskId)}
-            onClaimTask={(taskId) => claimMutation.mutate(taskId)}
-            onSendToAdmin={(taskId) => handoffMutation.mutate(taskId)}
-            onRequestReview={(taskId) => checkpointMutation.mutate(taskId)}
-          />
+            <TaskBoard
+              tasks={taskBoardQuery.data?.items}
+              selectedTaskId={selectedTask?.id ?? null}
+              taskActionMessage={taskActionMessage}
+              onSelectTask={(taskId) => setSelectedTaskId(taskId)}
+              onClaimTask={(taskId) => claimMutation.mutate(taskId)}
+              onSendToAdmin={(taskId) => handoffMutation.mutate(taskId)}
+              onRequestReview={(taskId) => checkpointMutation.mutate(taskId)}
+            />
           </section>
         </div>
 
