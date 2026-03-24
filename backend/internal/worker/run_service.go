@@ -16,6 +16,7 @@ type ClaimExecutionContext struct {
 	MissionID          string
 	TaskItemID         string
 	TaskTitle          string
+	TaskType           string
 	AgentID            string
 	AdminAgentID       string
 	DownstreamTaskRefs []string
@@ -170,6 +171,19 @@ func (s *RunService) advanceTaskChain(ctx context.Context, execCtx ClaimExecutio
 		if err := s.store.UpdateTaskStatus(ctx, execCtx.TaskItemID, "done"); err != nil {
 			return err
 		}
+		if execCtx.TaskType == "design" {
+			if err := s.store.CreateMissionDecision(ctx, MissionDecisionInput{
+				MissionID:        execCtx.MissionID,
+				DecidedByAgentID: execCtx.AdminAgentID,
+				Decision:         "enter_implementation",
+				Summary:          "方案收敛完成，平台自动进入开发阶段。",
+			}); err != nil {
+				return err
+			}
+			if err := s.store.UpdateMissionStatus(ctx, execCtx.MissionID, "implementation"); err != nil {
+				return err
+			}
+		}
 
 		for _, taskRef := range execCtx.DownstreamTaskRefs {
 			target, err := s.store.ResolveTaskByIdentifier(ctx, execCtx.MissionID, taskRef)
@@ -264,6 +278,7 @@ func (r *Repository) GetClaimExecutionContext(ctx context.Context, claimID strin
 		MissionID:          row.MissionID,
 		TaskItemID:         row.TaskItemID,
 		TaskTitle:          row.TaskTitle,
+		TaskType:           row.TaskType,
 		AgentID:            row.AgentID,
 		AdminAgentID:       row.AdminAgentID,
 		DownstreamTaskRefs: jsonStringSlice(row.DownstreamTaskIdsJson),

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 
 import { Mission, TaskBoard } from "../../lib/api";
 import { formatStatusLabel, formatTypeLabel } from "../../lib/display";
+import { deriveMissionProgress, summarizeMissionProgress } from "../../lib/mission-progress";
 
 type MissionBoardProps = {
   missions: Mission[];
@@ -23,6 +24,7 @@ export function MissionBoard({ missions, boardsByMission }: MissionBoardProps) {
           const board = boardsByMission[mission.id];
           const tasks = board?.items ?? [];
           const pendingCount = tasks.filter((task) => task.status !== "done").length;
+          const progressSummary = summarizeMissionProgress(deriveMissionProgress(mission, tasks));
 
           return (
             <article key={mission.id} className="mission-row-card">
@@ -33,6 +35,7 @@ export function MissionBoard({ missions, boardsByMission }: MissionBoardProps) {
                 </div>
                 <h3>{mission.title}</h3>
                 <p>{mission.description ?? "暂无任务说明。"}</p>
+                <div className="mission-row-card__summary">{progressSummary}</div>
               </div>
               <div className="mission-row-card__tasks">
                 {tasks.slice(0, 3).map((task) => (

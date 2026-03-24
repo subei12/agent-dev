@@ -13,6 +13,7 @@ test("app shell shows mission navigation", async ({ page }) => {
   await expect(page.getByText("新建需求", { exact: true })).toBeVisible();
   await expect(page.getByText("任务脉冲", { exact: true })).toBeVisible();
   await expect(page.getByText("最近动态", { exact: true })).toBeVisible();
+  await expect(page.getByText("项目任务列表", { exact: true })).toBeVisible();
 });
 
 test("mission page shows documents and task board", async ({ page }) => {

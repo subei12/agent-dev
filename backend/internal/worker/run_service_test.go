@@ -209,6 +209,7 @@ func TestSuccessfulClaimAutoClaimsDownstreamTask(t *testing.T) {
 			ClaimID:            "claim_1",
 			MissionID:          "mission_1",
 			TaskItemID:         "task_design",
+			TaskType:           "design",
 			AgentID:            "agent_admin",
 			ExecutorProfileID:  "exec_admin",
 			DownstreamTaskRefs: []string{"开发实现与自测"},
@@ -244,6 +245,15 @@ func TestSuccessfulClaimAutoClaimsDownstreamTask(t *testing.T) {
 	}
 	if got := store.updatedTaskStatus["task_code"]; got != "claimed" {
 		t.Fatalf("expected downstream task claimed, got %q", got)
+	}
+	if len(store.missionDecisions) != 1 {
+		t.Fatalf("expected 1 mission decision, got %d", len(store.missionDecisions))
+	}
+	if store.missionDecisions[0].Decision != "enter_implementation" {
+		t.Fatalf("expected enter_implementation decision, got %q", store.missionDecisions[0].Decision)
+	}
+	if got := store.missionStatuses["mission_1"]; got != "implementation" {
+		t.Fatalf("expected mission status implementation, got %q", got)
 	}
 }
 

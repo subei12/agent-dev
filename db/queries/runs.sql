@@ -38,6 +38,7 @@ select
   c.agent_id,
   m.admin_agent_id,
   t.title as task_title,
+  t.type as task_type,
   t.downstream_task_ids_json,
   a.executor_profile_id,
   ep.command,

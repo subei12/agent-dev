@@ -105,6 +105,7 @@ select
   c.agent_id,
   m.admin_agent_id,
   t.title as task_title,
+  t.type as task_type,
   t.downstream_task_ids_json,
   a.executor_profile_id,
   ep.command,
@@ -125,6 +126,7 @@ type GetTaskClaimExecutionContextRow struct {
 	AgentID               string `json:"agent_id"`
 	AdminAgentID          string `json:"admin_agent_id"`
 	TaskTitle             string `json:"task_title"`
+	TaskType              string `json:"task_type"`
 	DownstreamTaskIdsJson []byte `json:"downstream_task_ids_json"`
 	ExecutorProfileID     string `json:"executor_profile_id"`
 	Command               string `json:"command"`
@@ -141,6 +143,7 @@ func (q *Queries) GetTaskClaimExecutionContext(ctx context.Context, id string) (
 		&i.AgentID,
 		&i.AdminAgentID,
 		&i.TaskTitle,
+		&i.TaskType,
 		&i.DownstreamTaskIdsJson,
 		&i.ExecutorProfileID,
 		&i.Command,
