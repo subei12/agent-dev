@@ -6,6 +6,8 @@ import { createMission, getMissions, getTaskBoard } from "../lib/api";
 import { formatStatusLabel, formatTypeLabel } from "../lib/display";
 import { MissionBoard } from "../features/missions/mission-board";
 import { MissionRequestComposer } from "../features/missions/mission-request-composer";
+import { MissionStatusChart } from "../features/missions/mission-status-chart";
+import { MissionWorkbenchPreview } from "../features/missions/mission-workbench-preview";
 
 const projectId = "proj_1";
 
@@ -61,10 +63,13 @@ export function HomePage() {
         </div>
       }
     >
-      <MissionRequestComposer
-        isSubmitting={missionMutation.isPending}
-        onCreateMission={(payload) => missionMutation.mutate(payload)}
-      />
+      <section className="dashboard-hero-grid">
+        <MissionRequestComposer
+          isSubmitting={missionMutation.isPending}
+          onCreateMission={(payload) => missionMutation.mutate(payload)}
+        />
+        <MissionWorkbenchPreview missionTitle={spotlightMission?.title ?? ""} board={boardsByMission[spotlightMission?.id ?? ""] ?? null} />
+      </section>
       <section className="dashboard-summary-grid">
         <article className="panel summary-card">
           <p className="panel-kicker">活跃 Mission</p>
@@ -83,6 +88,7 @@ export function HomePage() {
         </article>
       </section>
       <section className="dashboard-main-grid">
+        <MissionStatusChart missions={missionsQuery.data ?? []} boardsByMission={boardsByMission} />
         <article className="panel dashboard-pulse">
           <div className="panel-header">
             <p className="panel-kicker">任务脉冲</p>

@@ -14,6 +14,8 @@ test("app shell shows mission navigation", async ({ page }) => {
   await expect(page.getByText("任务脉冲", { exact: true })).toBeVisible();
   await expect(page.getByText("最近动态", { exact: true })).toBeVisible();
   await expect(page.getByText("项目任务列表", { exact: true })).toBeVisible();
+  await expect(page.getByText("平台状态趋势", { exact: true })).toBeVisible();
+  await expect(page.getByText("工作台演示", { exact: true })).toBeVisible();
 });
 
 test("mission page shows documents and task board", async ({ page }) => {
@@ -21,7 +23,8 @@ test("mission page shows documents and task board", async ({ page }) => {
 
   await expect(page.getByText("内部执行任务", { exact: true })).toBeVisible();
   await expect(page.getByText("自动推进状态", { exact: true })).toBeVisible();
-  await expect(page.getByText("需求收敛", { exact: true })).toBeVisible();
+  await expect(page.getByText("需求收敛", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("阶段推进图", { exact: true })).toBeVisible();
   await expect(page.getByText("待开始", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("文档", { exact: true })).toBeVisible();
   await expect(page.getByText("任务详情", { exact: true })).toBeVisible();

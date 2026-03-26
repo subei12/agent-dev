@@ -1,6 +1,7 @@
 import { Mission, TaskItemView } from "../../lib/api";
 import { formatStatusLabel } from "../../lib/display";
 import { deriveMissionProgress, summarizeMissionProgress } from "../../lib/mission-progress";
+import { MissionStageChart } from "./mission-stage-chart";
 
 /**
  * MissionOverview 渲染或处理当前前端行为。
@@ -32,6 +33,7 @@ export function MissionOverview({
             <p>{progressSummary}</p>
             <p>平台会按收敛方案、开发实现、测试验收、管理员复核的顺序自动推进。</p>
           </div>
+          <MissionStageChart steps={steps} />
         </div>
         <div className="mission-overview__facts">
           {steps.map((step) => (
